@@ -14,4 +14,6 @@ interface UserRepository {
 
     suspend fun loginWithEmail(email: String, pass: String): Result<Boolean>
     suspend fun removeXp(amount: Int)
+    suspend fun logout()
+    suspend fun updateUserProfile(name: String, photoUrl: String?): Result<Boolean>
 }

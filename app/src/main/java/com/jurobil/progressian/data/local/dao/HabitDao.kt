@@ -16,8 +16,8 @@ import kotlinx.coroutines.flow.Flow
 interface HabitDao {
 
     @Transaction
-    @Query("SELECT * FROM habits ORDER BY createdAt DESC")
-    fun getAllHabits(): Flow<List<HabitWithMissions>>
+    @Query("SELECT * FROM habits WHERE userId = :userId ORDER BY createdAt DESC")
+    fun getAllHabits(userId: String): Flow<List<HabitWithMissions>>
 
     @Transaction
     @Query("SELECT * FROM habits WHERE id = :id")

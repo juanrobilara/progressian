@@ -139,7 +139,6 @@ fun LoginScreen(
 
             Spacer(modifier = Modifier.height(32.dp))
 
-            // --- INPUTS EMAIL/PASS ---
             OutlinedTextField(
                 value = email,
                 onValueChange = { email = it },
@@ -187,11 +186,12 @@ fun LoginScreen(
 
             OutlinedButton(
                 onClick = {
-                    googleAuthLauncher.launch(googleSignInClient.signInIntent)
+                    googleSignInClient.signOut().addOnCompleteListener {
+                        googleAuthLauncher.launch(googleSignInClient.signInIntent)
+                    }
                 },
                 modifier = Modifier.fillMaxWidth().height(50.dp)
             ) {
-                // Icono y Texto
                 Text("Continuar con Google")
             }
 
