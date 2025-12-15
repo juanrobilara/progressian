@@ -3,6 +3,7 @@ import android.util.Log
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.auth.FirebaseAuthUserCollisionException
 import com.google.firebase.auth.GoogleAuthProvider
+import com.google.firebase.auth.userProfileChangeRequest
 import com.google.firebase.firestore.FirebaseFirestore
 import com.google.firebase.firestore.ListenerRegistration
 import com.jurobil.progressian.core.result.Result
@@ -220,6 +221,37 @@ class UserRepositoryImpl @Inject constructor(
                 currentXp = 0
             )
             userDocRef.set(initialStats).await()
+        }
+    }
+
+    override suspend fun logout() {
+        auth.signOut()
+    }
+
+    override suspend fun updateUserProfile(name: String, photoUrl: String?): Result<Boolean> {
+        val user = auth.currentUser ?: return Result.Error(Exception("No user logged in"))
+
+        return try {
+            val profileUpdates = userProfileChangeRequest {
+                displayName = name
+                if (photoUrl != null) {
+                    photoUri = android.net.Uri.parse(photoUrl)
+                }
+            }
+            user.updateProfile(profileUpdates).await()
+            val updates = mutableMapOf<String, Any>(
+                "userName" to name
+            )
+            if (photoUrl != null) updates["photoUrl"] = photoUrl
+
+            firestore.collection("users").document(user.uid)
+                .update(updates)
+                .await()
+
+            Result.Success(true)
+        } catch (e: Exception) {
+            Log.e("UserRepo", "Error updating profile", e)
+            Result.Error(e)
         }
     }
 }

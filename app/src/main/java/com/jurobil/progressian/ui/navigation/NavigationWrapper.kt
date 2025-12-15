@@ -20,6 +20,7 @@ import com.jurobil.progressian.ui.screens.habitDetailScreen.HabitDetailScreen
 import com.jurobil.progressian.ui.screens.homeScreen.HomeScreen
 import com.jurobil.progressian.ui.screens.loginScreen.LoginScreen
 import com.jurobil.progressian.ui.screens.missionDetailScreen.MissionDetailScreen
+import com.jurobil.progressian.ui.screens.profileScreen.ProfileScreen
 import com.jurobil.progressian.ui.screens.registerScreen.RegisterScreen
 
 @Composable
@@ -84,7 +85,13 @@ fun NavigationWrapper() {
             }
 
             composable(route = Routes.Profile.route) {
-                Text("Pantalla de Perfil en construcción")
+                ProfileScreen(
+                    onNavigateToLogin = {
+                        navController.navigate(Routes.Login.route) {
+                            popUpTo(0) { inclusive = true }
+                        }
+                    }
+                )
             }
 
             composable(
