@@ -9,6 +9,7 @@ import com.jurobil.progressian.domain.model.Mission
 fun Habit.toEntity(): HabitEntity {
     return HabitEntity(
         id = this.id,
+        userId = this.userId,
         title = this.title,
         description = this.description,
         imageUrl = this.imageUrl,
@@ -35,6 +36,7 @@ fun Mission.toEntity(habitId: String): MissionEntity {
 fun HabitWithMissions.toDomain(): Habit {
     return Habit(
         id = this.habit.id,
+        userId = this.habit.userId,
         title = this.habit.title,
         description = this.habit.description,
         imageUrl = this.habit.imageUrl,

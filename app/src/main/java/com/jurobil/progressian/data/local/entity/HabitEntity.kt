@@ -6,6 +6,7 @@ import androidx.room.PrimaryKey
 @Entity(tableName = "habits")
 data class HabitEntity(
     @PrimaryKey val id: String,
+    val userId: String,
     val title: String,
     val description: String,
     val imageUrl: String?,
