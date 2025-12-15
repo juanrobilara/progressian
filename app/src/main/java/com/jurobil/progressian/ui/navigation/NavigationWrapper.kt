@@ -15,6 +15,7 @@ import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
+import com.jurobil.progressian.ui.screens.feedScreen.FeedScreen
 import com.jurobil.progressian.ui.screens.habitDetailScreen.HabitDetailScreen
 import com.jurobil.progressian.ui.screens.homeScreen.HomeScreen
 import com.jurobil.progressian.ui.screens.loginScreen.LoginScreen
@@ -79,7 +80,7 @@ fun NavigationWrapper() {
             }
 
             composable(route = Routes.Feed.route) {
-                Text("Pantalla de Feed en construcción")
+                FeedScreen()
             }
 
             composable(route = Routes.Profile.route) {
