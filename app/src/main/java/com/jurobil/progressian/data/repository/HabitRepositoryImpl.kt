@@ -1,5 +1,6 @@
 package com.jurobil.progressian.data.repository
 
+import com.google.firebase.auth.FirebaseAuth
 import com.jurobil.progressian.data.local.dao.HabitDao
 import com.jurobil.progressian.data.local.dao.MissionDao
 import com.jurobil.progressian.data.mapper.toDomain
@@ -13,11 +14,14 @@ import javax.inject.Inject
 
 class HabitRepositoryImpl @Inject constructor(
     private val dao: HabitDao,
-    private val missionDao: MissionDao
+    private val missionDao: MissionDao,
+    private val auth: FirebaseAuth
 ) : HabitRepository {
 
     override fun getAllHabits(): Flow<List<Habit>> {
-        return dao.getAllHabits().map { list ->
+        val currentUserId = auth.currentUser?.uid ?: return kotlinx.coroutines.flow.emptyFlow()
+
+        return dao.getAllHabits(currentUserId).map { list ->
             list.map { it.toDomain() }
         }
     }
@@ -27,8 +31,11 @@ class HabitRepositoryImpl @Inject constructor(
     }
 
     override suspend fun saveHabit(habit: Habit) {
-        val habitEntity = habit.toEntity()
-        val missionEntities = habit.missions.map { it.toEntity(habitId = habit.id) }
+        val currentUserId = auth.currentUser?.uid ?: return
+        val habitWithOwner = habit.copy(userId = currentUserId)
+        val habitEntity = habitWithOwner.toEntity()
+        val missionEntities = habitWithOwner.missions.map { it.toEntity(habitId = habit.id) }
+
         dao.saveHabitWithMissions(habitEntity, missionEntities)
     }
 
