@@ -20,6 +20,11 @@ class UserRepositoryImpl @Inject constructor(
 ) : UserRepository {
 
     override suspend fun loginAnonymously(): Result<Boolean> {
+
+        if (auth.currentUser != null) {
+            return Result.Success(true)
+        }
+
         return try {
             val authResult = auth.signInAnonymously().await()
             val user = authResult.user
