@@ -3,7 +3,8 @@ package com.jurobil.progressian.ui.navigation
 sealed class Routes(val route: String) {
     object Home : Routes("home")
     object Settings : Routes("settings")
-
+    object Feed : Routes("feed")
+    object Profile : Routes("profile")
     object Login : Routes("login")
     object Register : Routes("register")
 
