@@ -1,0 +1,47 @@
+{
+  "project_info": {
+    "project_number": "87862055668",
+    "project_id": "progressian-1",
+    "storage_bucket": "progressian-1.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:87862055668:android:c274d03080c944fd5404a1",
+        "android_client_info": {
+          "package_name": "com.jurobil.progressian"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "87862055668-r4k1uaohll05dt3rgmq1g97agv955t47.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.jurobil.progressian",
+            "certificate_hash": "dcc9c386a3a823d73c2ac95a98e68edb7a728646"
+          }
+        },
+        {
+          "client_id": "87862055668-2i6cmf7a0absktsbj6c8t5og7bkkbocc.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyDXw_018VhumL3j--RjdccxEqsc1DUva6Y"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "87862055668-2i6cmf7a0absktsbj6c8t5og7bkkbocc.apps.googleusercontent.com",
+              "client_type": 3
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
