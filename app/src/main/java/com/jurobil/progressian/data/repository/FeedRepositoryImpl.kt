@@ -43,6 +43,7 @@ class FeedRepositoryImpl @Inject constructor(
             id = firestore.collection("posts").document().id,
             authorId = user.uid,
             authorName = user.displayName ?: "Usuario",
+            authorPhotoUrl = user.photoUrl?.toString(),
             content = content,
             createdAt = System.currentTimeMillis()
         )
