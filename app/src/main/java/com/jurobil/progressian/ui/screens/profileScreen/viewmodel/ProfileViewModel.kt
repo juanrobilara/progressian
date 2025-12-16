@@ -1,5 +1,6 @@
 package com.jurobil.progressian.ui.screens.profileScreen.viewmodel
 
+import android.net.Uri
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.jurobil.progressian.core.result.Result
@@ -64,6 +65,33 @@ class ProfileViewModel @Inject constructor(
             when (result) {
                 is Result.Success -> _uiState.update { it.copy(isLoading = false) }
                 is Result.Error -> _uiState.update { it.copy(isLoading = false, error = result.exception.message) }
+            }
+        }
+    }
+
+    fun onUpdateAvatar(uri: Uri) {
+        viewModelScope.launch {
+            _uiState.update { it.copy(isLoading = true) }
+
+            try {
+                val photoUrl = userRepository.uploadAvatar(uri)
+                val currentName = userStats.value.userName.ifBlank { "Aventurero" }
+                val result = userRepository.updateUserProfile(currentName, photoUrl)
+
+                when (result) {
+                    is Result.Success -> {
+                        _uiState.update { it.copy(isLoading = false) }
+                    }
+                    is Result.Error -> {
+                        _uiState.update {
+                            it.copy(isLoading = false, error = result.exception.message)
+                        }
+                    }
+                }
+            } catch (e: Exception) {
+                _uiState.update {
+                    it.copy(isLoading = false, error = "Error subiendo imagen: ${e.message}")
+                }
             }
         }
     }
