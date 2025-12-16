@@ -4,13 +4,17 @@ import android.content.Intent
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.PickVisualMediaRequest
 import androidx.activity.result.contract.ActivityResultContracts
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.ExperimentalFoundationApi
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.Send
@@ -24,16 +28,21 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
 import coil.compose.AsyncImage
 import com.jurobil.progressian.domain.model.Habit
 import com.jurobil.progressian.domain.model.Mission
+import com.jurobil.progressian.ui.components.RpgButton
+import com.jurobil.progressian.ui.components.RpgTextField
 import com.jurobil.progressian.ui.screens.homeScreen.viewmodel.HomeViewModel
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -64,6 +73,26 @@ fun HomeScreen(
         }
         habitIdToUpdateImage = null
     }
+
+    val showWelcome by viewModel.showWelcomeDialog.collectAsState()
+    if (showWelcome) {
+        AlertDialog(
+            onDismissRequest = {},
+            containerColor = MaterialTheme.colorScheme.surface,
+            titleContentColor = MaterialTheme.colorScheme.primary,
+            textContentColor = MaterialTheme.colorScheme.onSurface,
+            title = {
+                Text("¡Bienvenido Aventurero!", style = MaterialTheme.typography.headlineMedium)
+            },
+            text = {
+                Text("Progressian convierte tu vida en un RPG.\n\n1. Crea Hábitos.\n2. Completa Misiones.\n3. Gana XP y sube de nivel.")
+            },
+            confirmButton = {
+                RpgButton(text = "Comenzar Aventura", onClick = { viewModel.onDismissWelcome() })
+            }
+        )
+    }
+
 
     LaunchedEffect(state.error) {
         if (state.error != null) {
@@ -122,7 +151,7 @@ fun HomeScreen(
                 TextButton(
                     onClick = {
                         showActionDialog = false
-                        showEditDialog = true // Abrir el de edición
+                        showEditDialog = true
                     }
                 ) { Text("Editar") }
             },
@@ -155,93 +184,208 @@ fun HomeScreen(
     }
 
 
-    Scaffold(
-        snackbarHost = { SnackbarHost(hostState = snackbarHostState) },
-        topBar = {
-            TopAppBar(
-                title = {
-                    Column {
-                        Text("Progressian", style = MaterialTheme.typography.titleMedium)
-                        Text(
-                            "Lvl ${state.userStats.currentLevel} • XP: ${state.userStats.currentXp}",
-                            style = MaterialTheme.typography.labelSmall,
-                            color = MaterialTheme.colorScheme.primary
-                        )
-                    }
-                },
-                actions = {
-                    IconButton(onClick = onSettingsClick) {
-
-                        Icon(Icons.Default.Settings, contentDescription = "Settings")
-                    }
-                }
-            )
-        },
-        bottomBar = {
-            Row(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(8.dp)
-                    .navigationBarsPadding(),
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                OutlinedTextField(
-                    value = promptText,
-                    onValueChange = { promptText = it },
-                    modifier = Modifier.weight(1f),
-                    placeholder = { Text("Quiero aprender a tocar guitarra...") },
-                    maxLines = 1
+    Box(
+        modifier = Modifier
+            .fillMaxSize()
+            .background(
+                brush = Brush.verticalGradient(
+                    colors = listOf(
+                        MaterialTheme.colorScheme.background,
+                        MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.2f)
+                    )
                 )
-                Spacer(modifier = Modifier.width(8.dp))
-                IconButton(
-                    onClick = {
-                        viewModel.onSendMessage(promptText)
-                        promptText = ""
+            )
+    ) {
+        Scaffold(
+            containerColor = Color.Transparent,
+            snackbarHost = { SnackbarHost(hostState = snackbarHostState) },
+            topBar = {
+                TopAppBar(
+                    title = {
+                        Row(
+                        ) {
+                            Image(
+                                painter = painterResource(id = com.jurobil.progressian.R.drawable.icon),
+                                contentDescription = "progressian",
+                                modifier = Modifier
+                                    .clip(CircleShape)
+                                    .size(48.dp),
+                                contentScale = ContentScale.Crop
+                            )
+
+                            Spacer(Modifier.width(8.dp))
+                            Column {
+                                Text("Progressian", style = MaterialTheme.typography.titleMedium)
+                                Text(
+                                    "Lvl ${state.userStats.currentLevel} • XP: ${state.userStats.currentXp}",
+                                    style = MaterialTheme.typography.labelSmall,
+                                    color = MaterialTheme.colorScheme.primary
+                                )
+                            }
+                        }
                     },
-                    enabled = !state.isLoading && promptText.isNotBlank()
+                    actions = {
+                        IconButton(onClick = onSettingsClick) {
+
+                            Icon(Icons.Default.Settings, contentDescription = "Settings")
+                        }
+                    }
+                )
+            },
+            bottomBar = {
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(8.dp)
+                        .navigationBarsPadding(),
+                    verticalAlignment = Alignment.CenterVertically
                 ) {
-                    if (state.isLoading) {
-                        CircularProgressIndicator(modifier = Modifier.size(24.dp))
-                    } else {
-                        Icon(Icons.AutoMirrored.Filled.Send, contentDescription = "Enviar")
+                    RpgTextField(
+                        value = promptText,
+                        onValueChange = { promptText = it },
+                        modifier = Modifier.weight(1f),
+                        label = "Quiero aprender a tocar guitarra...",
+                    )
+                    Spacer(modifier = Modifier.width(8.dp))
+                    IconButton(
+                        onClick = {
+                            viewModel.onSendMessage(promptText)
+                            promptText = ""
+                        },
+                        enabled = !state.isLoading && promptText.isNotBlank()
+                    ) {
+                        if (state.isLoading) {
+                            CircularProgressIndicator(modifier = Modifier.size(24.dp))
+                        } else {
+                            Icon(Icons.AutoMirrored.Filled.Send, contentDescription = "Enviar")
+                        }
                     }
                 }
             }
-        }
-    ) { padding ->
-        LazyColumn(
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(padding)
-                .padding(horizontal = 16.dp),
-            verticalArrangement = Arrangement.spacedBy(16.dp)
-        ) {
-            item {
+        ) { padding ->
+
+
+            Column(
+
+                modifier = Modifier
+                    .fillMaxSize()
+                    .padding(padding)
+                    .padding(vertical = 8.dp, horizontal = 16.dp),
+                verticalArrangement = Arrangement.spacedBy(16.dp)
+
+            ) {
+
+                Card(
+                    modifier = Modifier.fillMaxWidth(),
+                    colors = CardDefaults.cardColors(
+                        containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.8f)
+                    ),
+                    border = BorderStroke(
+                        1.dp,
+                        MaterialTheme.colorScheme.outline
+                    )
+                ) {
+                    Row(
+                        modifier = Modifier.padding(16.dp),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+
+                        Box(
+                            modifier = Modifier
+                                .size(56.dp)
+                                .background(MaterialTheme.colorScheme.primary, CircleShape)
+                                .border(2.dp, MaterialTheme.colorScheme.onPrimary, CircleShape),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                                Text(
+                                    "LVL",
+                                    style = MaterialTheme.typography.labelSmall,
+                                    color = MaterialTheme.colorScheme.onPrimary,
+                                    fontSize = 8.sp
+                                )
+                                Text(
+                                    "${state.userStats.currentLevel}",
+                                    style = MaterialTheme.typography.titleLarge,
+                                    color = MaterialTheme.colorScheme.onPrimary,
+                                    fontWeight = FontWeight.Bold
+                                )
+                            }
+                        }
+
+                        Spacer(modifier = Modifier.width(16.dp))
+
+
+                        Column(modifier = Modifier.weight(1f)) {
+                            val xpMax = state.userStats.currentLevel * 100
+                            val progress =
+                                (state.userStats.currentXp.toFloat() / xpMax.toFloat()).coerceIn(
+                                    0f,
+                                    1f
+                                )
+
+                            Row(
+                                horizontalArrangement = Arrangement.SpaceBetween,
+                                modifier = Modifier.fillMaxWidth()
+                            ) {
+                                Text("Experiencia", style = MaterialTheme.typography.labelSmall)
+                                Text(
+                                    "${state.userStats.currentXp} / $xpMax XP",
+                                    style = MaterialTheme.typography.labelSmall
+                                )
+                            }
+                            Spacer(modifier = Modifier.height(6.dp))
+                            LinearProgressIndicator(
+                                progress = { progress },
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .height(10.dp)
+                                    .clip(RoundedCornerShape(5.dp)),
+                                color = MaterialTheme.colorScheme.primary,
+                                trackColor = Color.Black.copy(alpha = 0.3f),
+                            )
+                        }
+                    }
+                }
+
                 Text(
                     "Mis Hábitos",
                     style = MaterialTheme.typography.headlineSmall,
-                    modifier = Modifier.padding(vertical = 8.dp)
                 )
-            }
 
-            items(state.habits) { habit ->
-                HabitCard(
-                    habit = habit,
-                    onClick = { onHabitClick(habit.id) },
-                    onMissionCheck = { missionId, isDone, xp ->
-                        viewModel.onMissionChecked(missionId, isDone, xp)
-                    },
-                    onImageClick = {
-                        habitIdToUpdateImage = habit.id
-                        photoPickerLauncher.launch(
-                            PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.ImageOnly)
+
+                LazyColumn(
+                    verticalArrangement = Arrangement.spacedBy(16.dp)
+                ) {
+
+
+                    item { Spacer(modifier = Modifier.height(16.dp)) }
+
+
+
+                    items(state.habits) { habit ->
+                        HabitCard(
+                            habit = habit,
+                            onClick = { onHabitClick(habit.id) },
+                            onMissionCheck = { missionId, isDone, xp ->
+                                viewModel.onMissionChecked(missionId, isDone, xp)
+                            },
+                            onImageClick = {
+                                habitIdToUpdateImage = habit.id
+                                photoPickerLauncher.launch(
+                                    PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.ImageOnly)
+                                )
+                            },
+                            onLongClick = {
+                                selectedHabit = habit
+                                showActionDialog = true
+                            }
                         )
-                    },
-                    onLongClick = {
-                        selectedHabit = habit
-                        showActionDialog = true
                     }
-                )
+
+
+                    item { Spacer(modifier = Modifier.height(80.dp)) }
+                }
             }
         }
     }
@@ -321,8 +465,8 @@ fun HabitCard(
             Text(
                 text = habit.description,
                 style = MaterialTheme.typography.bodySmall,
-                modifier = Modifier.fillMaxWidth() // Ocupa todo el ancho
-                // maxLines = 2
+                modifier = Modifier.fillMaxWidth()
+
             )
 
             HorizontalDivider(modifier = Modifier.padding(vertical = 8.dp))
@@ -370,8 +514,8 @@ fun HabitPreviewDialog(
     habit: Habit,
     onConfirm: () -> Unit,
     onDismiss: () -> Unit,
-    onDeleteMission: (String) -> Unit, // Callback borrar
-    onAddMission: (String) -> Unit     // Callback agregar
+    onDeleteMission: (String) -> Unit,
+    onAddMission: (String) -> Unit
 ) {
     var newMissionText by remember { mutableStateOf("") }
 
@@ -383,7 +527,7 @@ fun HabitPreviewDialog(
                 Text(habit.description, style = MaterialTheme.typography.bodySmall)
                 Spacer(modifier = Modifier.height(16.dp))
 
-                // Lista de misiones con scroll
+
                 LazyColumn(modifier = Modifier.heightIn(max = 200.dp)) {
                     items(habit.missions) { mission ->
                         Row(
@@ -393,7 +537,11 @@ fun HabitPreviewDialog(
                         ) {
                             Text("• ${mission.title}", modifier = Modifier.weight(1f))
                             IconButton(onClick = { onDeleteMission(mission.id) }) {
-                                Icon(Icons.Default.Close, contentDescription = "Borrar", tint = MaterialTheme.colorScheme.error)
+                                Icon(
+                                    Icons.Default.Close,
+                                    contentDescription = "Borrar",
+                                    tint = MaterialTheme.colorScheme.error
+                                )
                             }
                         }
                     }
@@ -401,7 +549,7 @@ fun HabitPreviewDialog(
 
                 HorizontalDivider(modifier = Modifier.padding(vertical = 8.dp))
 
-                // Input simple para agregar
+
                 Row(verticalAlignment = Alignment.CenterVertically) {
                     OutlinedTextField(
                         value = newMissionText,

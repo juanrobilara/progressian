@@ -1,14 +1,21 @@
 package com.jurobil.progressian.data.repository
+import android.content.Context
+import android.net.Uri
 import android.util.Log
+import aws.sdk.kotlin.services.s3.S3Client
+import aws.sdk.kotlin.services.s3.model.PutObjectRequest
+import aws.smithy.kotlin.runtime.content.ByteStream
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.auth.FirebaseAuthUserCollisionException
 import com.google.firebase.auth.GoogleAuthProvider
 import com.google.firebase.auth.userProfileChangeRequest
 import com.google.firebase.firestore.FirebaseFirestore
 import com.google.firebase.firestore.ListenerRegistration
+import com.jurobil.progressian.BuildConfig
 import com.jurobil.progressian.core.result.Result
 import com.jurobil.progressian.domain.model.UserStats
 import com.jurobil.progressian.domain.repository.UserRepository
+import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.channels.awaitClose
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.callbackFlow
@@ -17,7 +24,9 @@ import javax.inject.Inject
 
 class UserRepositoryImpl @Inject constructor(
     private val auth: FirebaseAuth,
-    private val firestore: FirebaseFirestore
+    private val firestore: FirebaseFirestore,
+    private val s3Client: S3Client,
+    @ApplicationContext private val context: Context
 ) : UserRepository {
 
     override suspend fun loginAnonymously(): Result<Boolean> {
@@ -254,5 +263,30 @@ class UserRepositoryImpl @Inject constructor(
             Result.Error(e)
         }
     }
+
+    override suspend fun uploadAvatar(uri: Uri): String {
+        val user = auth.currentUser ?: throw Exception("No user")
+        val bucketName = "progressian"
+        val publicDomain = BuildConfig.PUBLIC_URL
+
+        val fileName = "avatars/${user.uid}_${System.currentTimeMillis()}.jpg"
+
+        val stream = context.contentResolver.openInputStream(uri)
+            ?: throw Exception("No se pudo abrir la imagen")
+        val bytes = stream.readBytes()
+        stream.close()
+
+        val request = PutObjectRequest {
+            bucket = bucketName
+            key = fileName
+            body = ByteStream.fromBytes(bytes)
+            contentType = "image/jpeg"
+        }
+
+        s3Client.putObject(request)
+
+        return "$publicDomain/$fileName"
+    }
+
 }
 

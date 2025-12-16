@@ -34,6 +34,11 @@ android {
 
         buildConfigField("String", "GEMINI_API_KEY", "\"${localProperties["GEMINI_API_KEY"]}\"")
         buildConfigField("String", "SERVER_CLIENT_ID", "\"${localProperties["SERVER_CLIENT_ID"]}\"")
+        buildConfigField("String", "ACCOUNT_ID", "\"${localProperties["ACCOUNT_ID"]}\"")
+        buildConfigField("String", "S3_API", "\"${localProperties["S3_API"]}\"")
+        buildConfigField("String", "ACCESS_KEY", "\"${localProperties["ACCESS_KEY"]}\"")
+        buildConfigField("String", "SECRET_ACCESS_KEY", "\"${localProperties["SECRET_ACCESS_KEY"]}\"")
+        buildConfigField("String", "PUBLIC_URL", "\"${localProperties["PUBLIC_URL"]}\"")
     }
 
     buildTypes {
@@ -153,5 +158,11 @@ dependencies {
 
     //Gemini
     implementation("com.google.ai.client.generativeai:generativeai:0.9.0")
+
+    //Fonts
+    implementation("androidx.compose.ui:ui-text-google-fonts:1.5.4")
+
+    //Cliente S3
+    implementation("aws.sdk.kotlin:s3:1.0.76")
 
 }

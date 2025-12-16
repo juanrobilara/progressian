@@ -3,7 +3,10 @@ package com.jurobil.progressian.ui.screens.loginScreen
 import android.util.Log
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
+import androidx.compose.foundation.Image
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -11,6 +14,9 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material3.Button
@@ -27,6 +33,7 @@ import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBar
+import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
@@ -37,7 +44,10 @@ import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.unit.dp
@@ -46,6 +56,8 @@ import com.google.android.gms.auth.api.signin.GoogleSignIn
 import com.google.android.gms.auth.api.signin.GoogleSignInOptions
 import com.google.android.gms.common.api.ApiException
 import com.jurobil.progressian.BuildConfig
+import com.jurobil.progressian.ui.components.RpgButton
+import com.jurobil.progressian.ui.components.RpgTextField
 import com.jurobil.progressian.ui.screens.loginScreen.viewmodel.LoginEffect
 import com.jurobil.progressian.ui.screens.loginScreen.viewmodel.LoginViewModel
 
@@ -86,7 +98,6 @@ fun LoginScreen(
             .requestEmail()
             .build()
     }
-
     val googleSignInClient = remember { GoogleSignIn.getClient(context, gso) }
 
     val googleAuthLauncher = rememberLauncherForActivityResult(
@@ -95,112 +106,131 @@ fun LoginScreen(
         val task = GoogleSignIn.getSignedInAccountFromIntent(result.data)
         try {
             val account = task.getResult(ApiException::class.java)
-            val idToken = account.idToken
-            if (idToken != null) {
-                viewModel.onGoogleLogin(idToken)
+            if (account.idToken != null) {
+                viewModel.onGoogleLogin(account.idToken!!)
             }
         } catch (e: ApiException) {
-            Log.e("GoogleID", "Error al realizar google login")
+            Log.e("GoogleID", "Error login google", e)
         }
     }
 
+    LaunchedEffect(Unit) {
+        viewModel.loginEffect.collect { effect ->
+            if (effect is LoginEffect.NavigateToHome) onLoginSuccess()
+        }
+    }
 
     Scaffold(
         topBar = {
-            TopAppBar(
-                title = { },
-                navigationIcon = {
-                    IconButton(onClick = onBack) {
-                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Atrás")
-                    }
-                }
-            )
         }
     ) { padding ->
-        Column(
+        Box(
             modifier = Modifier
                 .fillMaxSize()
+                .background(MaterialTheme.colorScheme.background)
                 .padding(padding)
-                .padding(24.dp),
-            horizontalAlignment = Alignment.CenterHorizontally,
-            verticalArrangement = Arrangement.Center
         ) {
-            Text(
-                "Bienvenido de nuevo",
-                style = MaterialTheme.typography.headlineMedium,
-                fontWeight = FontWeight.Bold
-            )
-            Spacer(modifier = Modifier.height(8.dp))
-            Text(
-                "Inicia sesión para guardar tu progreso",
-                style = MaterialTheme.typography.bodyMedium,
-                color = MaterialTheme.colorScheme.onSurfaceVariant
-            )
-
-            Spacer(modifier = Modifier.height(32.dp))
-
-            OutlinedTextField(
-                value = email,
-                onValueChange = { email = it },
-                label = { Text("Email") },
-                modifier = Modifier.fillMaxWidth(),
-                singleLine = true
-            )
-            Spacer(modifier = Modifier.height(16.dp))
-            OutlinedTextField(
-                value = password,
-                onValueChange = { password = it },
-                label = { Text("Contraseña") },
-                modifier = Modifier.fillMaxWidth(),
-                singleLine = true,
-                visualTransformation = PasswordVisualTransformation()
-            )
-
-            Spacer(modifier = Modifier.height(24.dp))
-
-            Button(
-                onClick = {
-                    isLoading = true
-                    // TODO: Lógica de Login con Email
-
-                    onLoginSuccess()
-                },
+            Column(
                 modifier = Modifier
-                    .fillMaxWidth()
-                    .height(50.dp),
-                enabled = !isLoading
+                    .fillMaxSize()
+                    .padding(24.dp),
+                horizontalAlignment = Alignment.CenterHorizontally,
+                verticalArrangement = Arrangement.Center
             ) {
-                if (isLoading) CircularProgressIndicator(color = MaterialTheme.colorScheme.onPrimary)
-                else Text("Iniciar Sesión")
-            }
 
-            Spacer(modifier = Modifier.height(24.dp))
+                Image(
+                    painter = painterResource(id = com.jurobil.progressian.R.drawable.icon),
+                    contentDescription = "progressian",
+                    modifier = Modifier
+                        .clip(CircleShape)
+                        .size(64.dp),
+                    contentScale = ContentScale.Crop
+                )
+                Spacer(Modifier.size(4.dp))
 
-            Row(verticalAlignment = Alignment.CenterVertically) {
-                HorizontalDivider(modifier = Modifier.weight(1f))
-                Text(" O ", modifier = Modifier.padding(horizontal = 8.dp))
-                HorizontalDivider(modifier = Modifier.weight(1f))
-            }
+                Text(
+                    "PROGRESSIAN",
+                    style = MaterialTheme.typography.headlineLarge,
+                    fontWeight = FontWeight.Bold,
+                    color = MaterialTheme.colorScheme.primary
+                )
 
-            Spacer(modifier = Modifier.height(24.dp))
+                HorizontalDivider(modifier = Modifier.fillMaxWidth(), thickness = 2.dp, color = MaterialTheme.colorScheme.primary)
 
-            OutlinedButton(
-                onClick = {
-                    googleSignInClient.signOut().addOnCompleteListener {
-                        googleAuthLauncher.launch(googleSignInClient.signInIntent)
+                Spacer(Modifier.size(48.dp))
+
+                Text(
+                    "PORTAL DE ACCESO",
+                    style = MaterialTheme.typography.headlineMedium,
+                    fontWeight = FontWeight.Bold,
+                    color = MaterialTheme.colorScheme.primary
+                )
+                Spacer(modifier = Modifier.height(8.dp))
+                Text(
+                    "Identifícate para continuar tu aventura",
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.7f)
+                )
+
+                Spacer(modifier = Modifier.height(32.dp))
+
+
+                RpgTextField(
+                    value = email,
+                    onValueChange = { email = it },
+                    label = "Correo Electrónico",
+                    modifier = Modifier.fillMaxWidth()
+                )
+                Spacer(modifier = Modifier.height(16.dp))
+                RpgTextField(
+                    value = password,
+                    onValueChange = { password = it },
+                    label = "Clave Secreta",
+                    modifier = Modifier.fillMaxWidth(),
+                    visualTransformation = PasswordVisualTransformation()
+                )
+
+                Spacer(modifier = Modifier.height(24.dp))
+
+                RpgButton(
+                    text = if (isLoading) "Conjurando..." else "ENTRAR AL REINO",
+                    onClick = {
+                        isLoading = true
+                        viewModel.onEmailLogin(email, password)
+                    },
+                    modifier = Modifier.fillMaxWidth().height(50.dp),
+                    enabled = !isLoading
+                )
+
+                Spacer(modifier = Modifier.height(24.dp))
+
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    HorizontalDivider(modifier = Modifier.weight(1f), color = MaterialTheme.colorScheme.outline)
+                    Text(" O ", modifier = Modifier.padding(horizontal = 8.dp), color = MaterialTheme.colorScheme.onBackground)
+                    HorizontalDivider(modifier = Modifier.weight(1f), color = MaterialTheme.colorScheme.outline)
+                }
+
+                Spacer(modifier = Modifier.height(24.dp))
+
+
+                RpgButton(
+                    text = "INVOCAR GOOGLE",
+                    onClick = {
+
+                        googleSignInClient.signOut().addOnCompleteListener {
+                            googleAuthLauncher.launch(googleSignInClient.signInIntent)
+                        }
+                    },
+                    modifier = Modifier.fillMaxWidth().height(50.dp)
+                )
+
+                Spacer(modifier = Modifier.weight(1f))
+
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Text("¿Nuevo aventurero?", color = MaterialTheme.colorScheme.onBackground)
+                    TextButton(onClick = onNavigateToRegister) {
+                        Text("Regístrate", color = MaterialTheme.colorScheme.secondary)
                     }
-                },
-                modifier = Modifier.fillMaxWidth().height(50.dp)
-            ) {
-                Text("Continuar con Google")
-            }
-
-            Spacer(modifier = Modifier.weight(1f))
-
-            Row(verticalAlignment = Alignment.CenterVertically) {
-                Text("¿No tienes cuenta?")
-                TextButton(onClick = onNavigateToRegister) {
-                    Text("Regístrate")
                 }
             }
         }

@@ -1,5 +1,6 @@
 package com.jurobil.progressian.domain.repository
 
+import android.net.Uri
 import com.jurobil.progressian.core.result.Result
 import com.jurobil.progressian.domain.model.UserStats
 import kotlinx.coroutines.flow.Flow
@@ -16,4 +17,6 @@ interface UserRepository {
     suspend fun removeXp(amount: Int)
     suspend fun logout()
     suspend fun updateUserProfile(name: String, photoUrl: String?): Result<Boolean>
+
+    suspend fun uploadAvatar(uri: Uri): String
 }
