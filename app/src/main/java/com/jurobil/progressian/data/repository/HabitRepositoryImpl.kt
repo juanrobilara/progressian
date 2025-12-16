@@ -19,8 +19,11 @@ class HabitRepositoryImpl @Inject constructor(
 ) : HabitRepository {
 
     override fun getAllHabits(): Flow<List<Habit>> {
-        val currentUserId = auth.currentUser?.uid ?: return kotlinx.coroutines.flow.emptyFlow()
+        val currentUserId = auth.currentUser?.uid
 
+        if (currentUserId == null) {
+            return kotlinx.coroutines.flow.flowOf(emptyList())
+        }
         return dao.getAllHabits(currentUserId).map { list ->
             list.map { it.toDomain() }
         }
