@@ -5,5 +5,6 @@ data class Post(
     val authorId: String = "",
     val authorName: String = "",
     val content: String = "",
+    val authorPhotoUrl: String? = null,
     val createdAt: Long = System.currentTimeMillis()
 )

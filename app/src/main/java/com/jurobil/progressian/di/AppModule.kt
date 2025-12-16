@@ -2,6 +2,9 @@ package com.jurobil.progressian.di
 
 import android.content.Context
 import androidx.room.Room
+import aws.sdk.kotlin.runtime.auth.credentials.StaticCredentialsProvider
+import aws.sdk.kotlin.services.s3.S3Client
+import aws.smithy.kotlin.runtime.net.url.Url
 import com.google.ai.client.generativeai.GenerativeModel
 import com.google.ai.client.generativeai.type.generationConfig
 import com.google.firebase.auth.FirebaseAuth
@@ -80,5 +83,25 @@ object AppModule {
     @Provides
     @Singleton
     fun provideFirebaseStorage(): FirebaseStorage = FirebaseStorage.getInstance()
+
+
+    @Provides
+    @Singleton
+    fun provideS3Client(): S3Client {
+
+        val accountId = BuildConfig.ACCOUNT_ID
+        val accessKey = BuildConfig.ACCESS_KEY
+        val secretKey = BuildConfig.SECRET_ACCESS_KEY
+
+        return S3Client {
+            region = "auto"
+            endpointUrl = Url.parse("https://$accountId.r2.cloudflarestorage.com")
+            credentialsProvider = StaticCredentialsProvider {
+                accessKeyId = accessKey
+                secretAccessKey = secretKey
+            }
+        }
+    }
 }
+
 
