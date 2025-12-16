@@ -34,6 +34,7 @@ import androidx.hilt.navigation.compose.hiltViewModel
 import coil.compose.AsyncImage
 import com.jurobil.progressian.domain.model.Habit
 import com.jurobil.progressian.domain.model.Mission
+import com.jurobil.progressian.ui.components.RpgButton
 import com.jurobil.progressian.ui.screens.homeScreen.viewmodel.HomeViewModel
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -64,6 +65,26 @@ fun HomeScreen(
         }
         habitIdToUpdateImage = null
     }
+
+    val showWelcome by viewModel.showWelcomeDialog.collectAsState()
+    if (showWelcome) {
+        AlertDialog(
+            onDismissRequest = {},
+            containerColor = MaterialTheme.colorScheme.surface,
+            titleContentColor = MaterialTheme.colorScheme.primary,
+            textContentColor = MaterialTheme.colorScheme.onSurface,
+            title = {
+                Text("¡Bienvenido Aventurero!", style = MaterialTheme.typography.headlineMedium)
+            },
+            text = {
+                Text("Progressian convierte tu vida en un RPG.\n\n1. Crea Hábitos.\n2. Completa Misiones.\n3. Gana XP y sube de nivel.")
+            },
+            confirmButton = {
+                RpgButton(text = "Comenzar Aventura", onClick = { viewModel.onDismissWelcome() })
+            }
+        )
+    }
+
 
     LaunchedEffect(state.error) {
         if (state.error != null) {
@@ -122,7 +143,7 @@ fun HomeScreen(
                 TextButton(
                     onClick = {
                         showActionDialog = false
-                        showEditDialog = true // Abrir el de edición
+                        showEditDialog = true
                     }
                 ) { Text("Editar") }
             },
@@ -321,8 +342,8 @@ fun HabitCard(
             Text(
                 text = habit.description,
                 style = MaterialTheme.typography.bodySmall,
-                modifier = Modifier.fillMaxWidth() // Ocupa todo el ancho
-                // maxLines = 2
+                modifier = Modifier.fillMaxWidth()
+
             )
 
             HorizontalDivider(modifier = Modifier.padding(vertical = 8.dp))
@@ -370,8 +391,8 @@ fun HabitPreviewDialog(
     habit: Habit,
     onConfirm: () -> Unit,
     onDismiss: () -> Unit,
-    onDeleteMission: (String) -> Unit, // Callback borrar
-    onAddMission: (String) -> Unit     // Callback agregar
+    onDeleteMission: (String) -> Unit,
+    onAddMission: (String) -> Unit
 ) {
     var newMissionText by remember { mutableStateOf("") }
 
@@ -383,7 +404,7 @@ fun HabitPreviewDialog(
                 Text(habit.description, style = MaterialTheme.typography.bodySmall)
                 Spacer(modifier = Modifier.height(16.dp))
 
-                // Lista de misiones con scroll
+
                 LazyColumn(modifier = Modifier.heightIn(max = 200.dp)) {
                     items(habit.missions) { mission ->
                         Row(
@@ -401,7 +422,7 @@ fun HabitPreviewDialog(
 
                 HorizontalDivider(modifier = Modifier.padding(vertical = 8.dp))
 
-                // Input simple para agregar
+
                 Row(verticalAlignment = Alignment.CenterVertically) {
                     OutlinedTextField(
                         value = newMissionText,

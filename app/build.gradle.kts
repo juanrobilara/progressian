@@ -154,4 +154,7 @@ dependencies {
     //Gemini
     implementation("com.google.ai.client.generativeai:generativeai:0.9.0")
 
+    //Fonts
+    implementation("androidx.compose.ui:ui-text-google-fonts:1.5.4")
+
 }

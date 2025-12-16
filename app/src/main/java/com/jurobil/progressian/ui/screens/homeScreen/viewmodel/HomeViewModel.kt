@@ -3,6 +3,7 @@ package com.jurobil.progressian.ui.screens.homeScreen.viewmodel
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.jurobil.progressian.core.result.Result
+import com.jurobil.progressian.data.repository.SettingsRepository
 import com.jurobil.progressian.domain.model.Difficulty
 import com.jurobil.progressian.domain.model.Habit
 import com.jurobil.progressian.domain.model.Mission
@@ -35,6 +36,7 @@ data class HomeUiState(
 class HomeViewModel @Inject constructor(
     private val habitRepository: HabitRepository,
     private val userRepository: UserRepository,
+    private val settingsRepository: SettingsRepository,
     private val generateHabitPlanUseCase: GenerateHabitPlanUseCase,
     private val completeMissionUseCase: CompleteMissionUseCase,
     private val updateMissionStatusUseCase: UpdateMissionStatusUseCase
@@ -64,6 +66,19 @@ class HomeViewModel @Inject constructor(
     private fun loginAnonymously() {
         viewModelScope.launch {
             userRepository.loginAnonymously()
+        }
+    }
+
+    val showWelcomeDialog = settingsRepository.isFirstTime
+        .stateIn(
+            scope = viewModelScope,
+            started = SharingStarted.WhileSubscribed(5000),
+            initialValue = false
+        )
+
+    fun onDismissWelcome() {
+        viewModelScope.launch {
+            settingsRepository.completeOnboarding()
         }
     }
 
