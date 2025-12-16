@@ -61,6 +61,7 @@ class HomeViewModel @Inject constructor(
 
     init {
         loginAnonymously()
+        syncUserData()
     }
 
     private fun loginAnonymously() {
@@ -191,6 +192,12 @@ class HomeViewModel @Inject constructor(
                 )
                 habitRepository.saveHabit(updatedHabit)
             }
+        }
+    }
+
+    private fun syncUserData() {
+        viewModelScope.launch {
+            habitRepository.syncHabits()
         }
     }
 

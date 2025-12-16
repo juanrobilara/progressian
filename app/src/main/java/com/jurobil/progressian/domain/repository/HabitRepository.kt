@@ -18,4 +18,6 @@ interface HabitRepository {
     suspend fun toggleMissionIncomplete(missionId: String, completed: Boolean)
 
     suspend fun getMissionById(missionId: String): Mission?
+
+    suspend fun syncHabits()
 }
