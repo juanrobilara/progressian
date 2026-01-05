@@ -4,6 +4,11 @@ import android.content.Intent
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.PickVisualMediaRequest
 import androidx.activity.result.contract.ActivityResultContracts
+import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.slideInVertically
+import androidx.compose.animation.slideOutVertically
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.Image
@@ -14,6 +19,7 @@ import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
@@ -28,6 +34,7 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
@@ -43,6 +50,8 @@ import com.jurobil.progressian.domain.model.Habit
 import com.jurobil.progressian.domain.model.Mission
 import com.jurobil.progressian.ui.components.RpgButton
 import com.jurobil.progressian.ui.components.RpgTextField
+import com.jurobil.progressian.ui.screens.homeScreen.components.HomeHeader
+import com.jurobil.progressian.ui.screens.homeScreen.components.ProgressCard
 import com.jurobil.progressian.ui.screens.homeScreen.viewmodel.HomeViewModel
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -50,10 +59,10 @@ import com.jurobil.progressian.ui.screens.homeScreen.viewmodel.HomeViewModel
 fun HomeScreen(
     viewModel: HomeViewModel = hiltViewModel(),
     onHabitClick: (String) -> Unit,
-    onSettingsClick: () -> Unit,
     onNavigateToLogin: () -> Unit
 ) {
     val state by viewModel.uiState.collectAsState()
+    val listState = rememberLazyListState()
     var promptText by remember { mutableStateOf("") }
     val snackbarHostState = remember { SnackbarHostState() }
     var habitIdToUpdateImage by remember { mutableStateOf<String?>(null) }
@@ -61,6 +70,12 @@ fun HomeScreen(
     var selectedHabit by remember { mutableStateOf<Habit?>(null) }
     var showActionDialog by remember { mutableStateOf(false) }
     var showEditDialog by remember { mutableStateOf(false) }
+
+    val showStickyBar by remember {
+        derivedStateOf {
+            listState.firstVisibleItemIndex > 0 || listState.firstVisibleItemScrollOffset > 300
+        }
+    }
 
     val photoPickerLauncher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.PickVisualMedia()
@@ -199,45 +214,11 @@ fun HomeScreen(
         Scaffold(
             containerColor = Color.Transparent,
             snackbarHost = { SnackbarHost(hostState = snackbarHostState) },
-            topBar = {
-                TopAppBar(
-                    title = {
-                        Row(
-                        ) {
-                            Image(
-                                painter = painterResource(id = com.jurobil.progressian.R.drawable.icon),
-                                contentDescription = "progressian",
-                                modifier = Modifier
-                                    .clip(CircleShape)
-                                    .size(48.dp),
-                                contentScale = ContentScale.Crop
-                            )
-
-                            Spacer(Modifier.width(8.dp))
-                            Column {
-                                Text("Progressian", style = MaterialTheme.typography.titleMedium)
-                                Text(
-                                    "Lvl ${state.userStats.currentLevel} • XP: ${state.userStats.currentXp}",
-                                    style = MaterialTheme.typography.labelSmall,
-                                    color = MaterialTheme.colorScheme.primary
-                                )
-                            }
-                        }
-                    },
-                    actions = {
-                        IconButton(onClick = onSettingsClick) {
-
-                            Icon(Icons.Default.Settings, contentDescription = "Settings")
-                        }
-                    }
-                )
-            },
             bottomBar = {
                 Row(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .padding(8.dp)
-                        .navigationBarsPadding(),
+                        .padding(8.dp),
                     verticalAlignment = Alignment.CenterVertically
                 ) {
                     RpgTextField(
@@ -264,106 +245,26 @@ fun HomeScreen(
             }
         ) { padding ->
 
-
-            Column(
-
+            LazyColumn(
+                state = listState,
                 modifier = Modifier
                     .fillMaxSize()
-                    .padding(padding)
-                    .padding(vertical = 8.dp, horizontal = 16.dp),
+                    .padding(bottom = padding.calculateBottomPadding()),
                 verticalArrangement = Arrangement.spacedBy(16.dp)
-
             ) {
-
-                Card(
-                    modifier = Modifier.fillMaxWidth(),
-                    colors = CardDefaults.cardColors(
-                        containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.8f)
-                    ),
-                    border = BorderStroke(
-                        1.dp,
-                        MaterialTheme.colorScheme.outline
+                item {
+                    HomeHeader(state = state)
+                }
+                item {
+                    Text(
+                        "Mis Hábitos",
+                        style = MaterialTheme.typography.headlineSmall,
+                        modifier = Modifier.padding(horizontal = 16.dp)
                     )
-                ) {
-                    Row(
-                        modifier = Modifier.padding(16.dp),
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-
-                        Box(
-                            modifier = Modifier
-                                .size(56.dp)
-                                .background(MaterialTheme.colorScheme.primary, CircleShape)
-                                .border(2.dp, MaterialTheme.colorScheme.onPrimary, CircleShape),
-                            contentAlignment = Alignment.Center
-                        ) {
-                            Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                                Text(
-                                    "LVL",
-                                    style = MaterialTheme.typography.labelSmall,
-                                    color = MaterialTheme.colorScheme.onPrimary,
-                                    fontSize = 8.sp
-                                )
-                                Text(
-                                    "${state.userStats.currentLevel}",
-                                    style = MaterialTheme.typography.titleLarge,
-                                    color = MaterialTheme.colorScheme.onPrimary,
-                                    fontWeight = FontWeight.Bold
-                                )
-                            }
-                        }
-
-                        Spacer(modifier = Modifier.width(16.dp))
-
-
-                        Column(modifier = Modifier.weight(1f)) {
-                            val xpMax = state.userStats.currentLevel * 100
-                            val progress =
-                                (state.userStats.currentXp.toFloat() / xpMax.toFloat()).coerceIn(
-                                    0f,
-                                    1f
-                                )
-
-                            Row(
-                                horizontalArrangement = Arrangement.SpaceBetween,
-                                modifier = Modifier.fillMaxWidth()
-                            ) {
-                                Text("Experiencia", style = MaterialTheme.typography.labelSmall)
-                                Text(
-                                    "${state.userStats.currentXp} / $xpMax XP",
-                                    style = MaterialTheme.typography.labelSmall
-                                )
-                            }
-                            Spacer(modifier = Modifier.height(6.dp))
-                            LinearProgressIndicator(
-                                progress = { progress },
-                                modifier = Modifier
-                                    .fillMaxWidth()
-                                    .height(10.dp)
-                                    .clip(RoundedCornerShape(5.dp)),
-                                color = MaterialTheme.colorScheme.primary,
-                                trackColor = Color.Black.copy(alpha = 0.3f),
-                            )
-                        }
-                    }
                 }
 
-                Text(
-                    "Mis Hábitos",
-                    style = MaterialTheme.typography.headlineSmall,
-                )
-
-
-                LazyColumn(
-                    verticalArrangement = Arrangement.spacedBy(16.dp)
-                ) {
-
-
-                    item { Spacer(modifier = Modifier.height(16.dp)) }
-
-
-
-                    items(state.habits) { habit ->
+                items(state.habits) { habit ->
+                    Box(modifier = Modifier.padding(horizontal = 16.dp)) {
                         HabitCard(
                             habit = habit,
                             onClick = { onHabitClick(habit.id) },
@@ -382,9 +283,52 @@ fun HomeScreen(
                             }
                         )
                     }
+                }
 
+                item { Spacer(modifier = Modifier.height(80.dp)) }
+            }
+        }
 
-                    item { Spacer(modifier = Modifier.height(80.dp)) }
+        AnimatedVisibility(
+            visible = showStickyBar,
+            enter = fadeIn(),
+            exit = fadeOut(),
+            modifier = Modifier.align(Alignment.TopCenter)
+        ) {
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .background(
+                        brush = Brush.verticalGradient(
+                            colors = listOf(
+                                MaterialTheme.colorScheme.background,
+                                MaterialTheme.colorScheme.background.copy(alpha = 0.9f)
+                            )
+                        )
+                    )
+                    .height(56.dp)
+                    .padding(horizontal = 16.dp),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Text(
+                    text = "Progressian",
+                    style = MaterialTheme.typography.titleMedium,
+                    fontWeight = FontWeight.Bold,
+                    color = MaterialTheme.colorScheme.onBackground
+                )
+
+                Spacer(modifier = Modifier.width(12.dp))
+                Surface(
+                    color = MaterialTheme.colorScheme.primaryContainer,
+                    shape = CircleShape
+                ) {
+                    Text(
+                        text = "NVL ${state.userStats.currentLevel}",
+                        style = MaterialTheme.typography.labelSmall,
+                        fontWeight = FontWeight.Bold,
+                        color = MaterialTheme.colorScheme.onPrimaryContainer,
+                        modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp)
+                    )
                 }
             }
         }
