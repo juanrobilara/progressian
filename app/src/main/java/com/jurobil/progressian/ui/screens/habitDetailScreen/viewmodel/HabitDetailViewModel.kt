@@ -4,6 +4,7 @@ import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.jurobil.progressian.domain.model.Habit
+import com.jurobil.progressian.domain.repository.FeedRepository
 import com.jurobil.progressian.domain.repository.HabitRepository
 import com.jurobil.progressian.domain.usecases.CompleteMissionUseCase
 import dagger.hilt.android.lifecycle.HiltViewModel
@@ -16,6 +17,7 @@ import javax.inject.Inject
 @HiltViewModel
 class HabitDetailViewModel @Inject constructor(
     private val habitRepository: HabitRepository,
+    private val feedRepository: FeedRepository,
     private val completeMissionUseCase: CompleteMissionUseCase,
     savedStateHandle: SavedStateHandle
 ) : ViewModel() {
@@ -37,7 +39,18 @@ class HabitDetailViewModel @Inject constructor(
     fun onMissionChecked(missionId: String, isCompleted: Boolean, xpReward: Int) {
         viewModelScope.launch {
             completeMissionUseCase(missionId, isCompleted, xpReward)
-            loadHabit() // Recargamos para refrescar la UI
+            loadHabit()
         }
     }
+
+    fun shareHabit(habit: Habit, shareAsPlan: Boolean) {
+        viewModelScope.launch {
+            if (shareAsPlan) {
+                feedRepository.shareHabitPlan(habit)
+            } else {
+                feedRepository.shareHabitProgress(habit)
+            }
+        }
+    }
+
 }

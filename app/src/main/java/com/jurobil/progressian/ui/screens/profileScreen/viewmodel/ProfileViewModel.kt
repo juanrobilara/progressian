@@ -5,6 +5,7 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.jurobil.progressian.core.result.Result
 import com.jurobil.progressian.domain.model.UserStats
+import com.jurobil.progressian.domain.repository.FeedRepository
 import com.jurobil.progressian.domain.repository.UserRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -25,7 +26,8 @@ data class ProfileUiState(
 
 @HiltViewModel
 class ProfileViewModel @Inject constructor(
-    private val userRepository: UserRepository
+    private val userRepository: UserRepository,
+    private val feedRepository: FeedRepository
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow(ProfileUiState())
@@ -60,10 +62,19 @@ class ProfileViewModel @Inject constructor(
         viewModelScope.launch {
             _uiState.update { it.copy(isLoading = true) }
 
-            val result = userRepository.updateUserProfile(newName, null)
+            val currentPhoto = userStats.value.photoUrl
+
+            val result = userRepository.updateUserProfile(newName, currentPhoto)
 
             when (result) {
-                is Result.Success -> _uiState.update { it.copy(isLoading = false) }
+                is Result.Success -> {
+                    feedRepository.updateAuthorProfileInPosts(
+                        userId = userStats.value.uid,
+                        newName = newName,
+                        newPhotoUrl = currentPhoto
+                    )
+                    _uiState.update { it.copy(isLoading = false) }
+                }
                 is Result.Error -> _uiState.update { it.copy(isLoading = false, error = result.exception.message) }
             }
         }
@@ -80,6 +91,11 @@ class ProfileViewModel @Inject constructor(
 
                 when (result) {
                     is Result.Success -> {
+                        feedRepository.updateAuthorProfileInPosts(
+                            userId = userStats.value.uid,
+                            newName = currentName,
+                            newPhotoUrl = photoUrl
+                        )
                         _uiState.update { it.copy(isLoading = false) }
                     }
                     is Result.Error -> {

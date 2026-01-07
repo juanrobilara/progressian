@@ -15,6 +15,9 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.filled.Share
+import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.Button
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.Checkbox
@@ -29,6 +32,9 @@ import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.semantics.Role.Companion.Checkbox
@@ -49,19 +55,27 @@ fun HabitDetailScreen(
     onMissionClick: (String) -> Unit
 ) {
     val habit by viewModel.habit.collectAsState()
+    var showShareDialog by remember { mutableStateOf(false) }
 
     Scaffold(
         topBar = {
-            TopAppBar(title = {
+            TopAppBar(
+                title = {
                 Text(
                     text = habit?.title ?: "", maxLines = 1, overflow = TextOverflow.Ellipsis
                 )
+            },
+                actions = {
+                IconButton(onClick = { showShareDialog = true }) {
+                    Icon(Icons.Default.Share, contentDescription = "Compartir")
+                }
             }, navigationIcon = {
                 IconButton(onClick = onBack) {
                     Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Atrás")
                 }
             })
-        }) { padding ->
+        }
+    ) { padding ->
         val currentHabit = habit
         if (currentHabit != null) {
             LazyColumn(
@@ -96,6 +110,26 @@ fun HabitDetailScreen(
                 item { Spacer(modifier = Modifier.height(16.dp)) }
             }
         }
+    }
+
+    if (showShareDialog && habit != null) {
+        AlertDialog(
+            onDismissRequest = { showShareDialog = false },
+            title = { Text("Compartir Hábito") },
+            text = { Text("¿Cómo deseas compartir tu aventura?") },
+            confirmButton = {
+                Button(onClick = {
+                    viewModel.shareHabit(habit!!, shareAsPlan = false)
+                    showShareDialog = false
+                }) { Text("Solo mi Progreso") }
+            },
+            dismissButton = {
+                Button(onClick = {
+                    viewModel.shareHabit(habit!!, shareAsPlan = true)
+                    showShareDialog = false
+                }) { Text("Compartir Plan (Clonable)") }
+            }
+        )
     }
 }
 
