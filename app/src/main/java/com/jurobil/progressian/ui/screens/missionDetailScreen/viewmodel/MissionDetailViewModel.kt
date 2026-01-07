@@ -27,4 +27,12 @@ class MissionDetailViewModel @Inject constructor(
             mission.value = habitRepository.getMissionById(missionId)
         }
     }
+
+    fun updateMission(title: String, xpReward: Int) {
+        viewModelScope.launch {
+            habitRepository.updateMissionDetails(missionId, title, xpReward)
+            mission.value = habitRepository.getMissionById(missionId)
+        }
+    }
+
 }

@@ -41,6 +41,10 @@ class HabitRepositoryImpl @Inject constructor(
         return missionEntity?.toDomain()
     }
 
+    override suspend fun updateMissionDetails(missionId: String, title: String, xpReward: Int) {
+        missionDao.updateMissionDetails(missionId, title, xpReward)
+        updateHabitInFirestore(missionId)
+    }
 
 
     override suspend fun saveHabit(habit: Habit) {
