@@ -17,6 +17,8 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.focus.FocusRequester
+import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.text.font.FontWeight
@@ -41,7 +43,9 @@ fun FeedScreen(
     var showCreateDialog by remember { mutableStateOf(false) }
     var showCommentsSheet by remember { mutableStateOf(false) }
     var selectedPostIdForComments by remember { mutableStateOf<String?>(null) }
-
+    val sheetState = rememberModalBottomSheetState(
+        skipPartiallyExpanded = true
+    )
     val snackbarHostState = remember { SnackbarHostState() }
 
 
@@ -64,7 +68,7 @@ fun FeedScreen(
             modifier = Modifier
                 .fillMaxSize()
                 .padding(padding),
-            contentPadding = PaddingValues(16.dp),
+            contentPadding = PaddingValues(top = 16.dp, start = 16.dp, end = 16.dp),
             verticalArrangement = Arrangement.spacedBy(12.dp)
         ) {
             items(state.posts) { post ->
@@ -101,7 +105,9 @@ fun FeedScreen(
             onDismissRequest = {
                 showCommentsSheet = false
                 selectedPostIdForComments = null
-            }
+            },
+            sheetState = sheetState,
+            contentWindowInsets = { WindowInsets.ime }
         ) {
             CommentsSection(
                 postId = selectedPostIdForComments!!,
@@ -291,12 +297,18 @@ fun CommentsSection(
 ) {
     val comments by viewModel.getComments(postId).collectAsState(initial = emptyList())
     var text by remember { mutableStateOf("") }
+    val focusRequester = remember { FocusRequester() }
+
+    LaunchedEffect(Unit) {
+        focusRequester.requestFocus()
+    }
 
     Column(
         modifier = Modifier
             .fillMaxWidth()
-            .heightIn(max = 500.dp)
-            .padding(16.dp)
+            .padding(top = 16.dp, start = 16.dp, end = 16.dp)
+            .navigationBarsPadding()
+            .imePadding()
     ) {
         Text("Comentarios", style = MaterialTheme.typography.headlineSmall)
         Spacer(modifier = Modifier.height(16.dp))
@@ -324,17 +336,24 @@ fun CommentsSection(
         Spacer(modifier = Modifier.height(8.dp))
 
 
-        Row(verticalAlignment = Alignment.CenterVertically) {
+        Row(
+            verticalAlignment = Alignment.CenterVertically,
+            modifier = Modifier
+                .fillMaxWidth()
+        ) {
             OutlinedTextField(
                 value = text,
                 onValueChange = { text = it },
-                modifier = Modifier.weight(1f),
+                modifier = Modifier.weight(1f)
+                    .focusRequester(focusRequester),
                 placeholder = { Text("Escribe algo...") },
                 singleLine = true
             )
             IconButton(onClick = {
-                viewModel.addComment(postId, text)
-                text = ""
+                if (text.isNotBlank()) {
+                    viewModel.addComment(postId, text)
+                    text = ""
+                }
             }) {
                 Icon(Icons.AutoMirrored.Filled.Send, contentDescription = "Enviar")
             }
