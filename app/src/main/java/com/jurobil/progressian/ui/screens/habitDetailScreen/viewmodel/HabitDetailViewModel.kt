@@ -53,4 +53,19 @@ class HabitDetailViewModel @Inject constructor(
         }
     }
 
+    fun deleteMission(missionId: String) {
+        viewModelScope.launch {
+            habitRepository.deleteMission(missionId)
+            loadHabit()
+        }
+    }
+
+    fun addMission(title: String, description: String, xpReward: Int) {
+        if (title.isBlank()) return
+        viewModelScope.launch {
+            habitRepository.addMission(habitId, title, description, xpReward)
+            loadHabit()
+        }
+    }
+
 }
