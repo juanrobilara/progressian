@@ -40,4 +40,7 @@ interface HabitDao {
 
     @Query("UPDATE missions SET isCompleted = :completed WHERE id = :missionId")
     suspend fun updateMissionStatus(missionId: String, completed: Boolean)
+
+    @Query("UPDATE habits SET totalXpReward = :newXp WHERE id = :habitId")
+    suspend fun updateHabitTotalXp(habitId: String, newXp: Int)
 }

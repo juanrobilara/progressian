@@ -21,5 +21,9 @@ interface HabitRepository {
 
     suspend fun updateMissionDetails(missionId: String, title: String, xpReward: Int)
 
+    suspend fun addMission(habitId: String, title: String, description: String, xpReward: Int)
+
+    suspend fun deleteMission(missionId: String)
+
     suspend fun syncHabits()
 }

@@ -8,6 +8,7 @@ import com.jurobil.progressian.data.mapper.toDomain
 import com.jurobil.progressian.data.mapper.toDomainHabit
 import com.jurobil.progressian.data.mapper.toEntity
 import com.jurobil.progressian.data.mapper.toFirestoreMap
+import com.jurobil.progressian.domain.model.Difficulty
 import com.jurobil.progressian.domain.model.Habit
 import com.jurobil.progressian.domain.model.Mission
 import com.jurobil.progressian.domain.repository.HabitRepository
@@ -122,6 +123,51 @@ class HabitRepositoryImpl @Inject constructor(
             android.util.Log.e("HabitRepo", "Error sincronizando", e)
         }
     }
+
+    override suspend fun addMission(habitId: String, title: String, description: String, xpReward: Int) {
+        val newMission = Mission(
+            habitId = habitId,
+            title = title,
+            description = description.ifBlank { "" },
+            xpReward = xpReward,
+            difficulty = difficultyFromXp(xpReward)
+        )
+
+        dao.insertMissions(listOf(newMission.toEntity(habitId)))
+        updateHabitTotalXp(habitId)
+        updateHabitInFirestore(newMission.id)
+    }
+
+    override suspend fun deleteMission(missionId: String) {
+        val mission = missionDao.getMissionById(missionId) ?: return
+        val habitId = mission.habitId
+
+        missionDao.deleteMission(missionId)
+        updateHabitTotalXp(habitId)
+
+        val habit = getHabitById(habitId)
+        if (habit != null) saveHabit(habit)
+    }
+
+
+    private suspend fun updateHabitTotalXp(habitId: String) {
+        val habitWithMissions = dao.getHabitById(habitId)
+        if (habitWithMissions != null) {
+            val newTotalXp = habitWithMissions.missions.sumOf { it.xpReward }
+
+            dao.updateHabitTotalXp(habitId, newTotalXp)
+        }
+    }
+    fun difficultyFromXp(xp: Int): Difficulty =
+        when (xp) {
+            in 0..50 -> Difficulty.EASY
+            in 51..100 -> Difficulty.MEDIUM
+            in 101..300 -> Difficulty.HARD
+            else -> Difficulty.EPIC
+        }
+
+
+
 }
 
 
