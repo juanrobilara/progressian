@@ -21,11 +21,13 @@ import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import coil.compose.AsyncImage
+import coil.request.ImageRequest
 import com.jurobil.progressian.domain.model.Habit
 import com.jurobil.progressian.domain.model.Post
 import com.jurobil.progressian.domain.model.PostType
@@ -71,7 +73,7 @@ fun FeedScreen(
             contentPadding = PaddingValues(top = 16.dp, start = 16.dp, end = 16.dp),
             verticalArrangement = Arrangement.spacedBy(12.dp)
         ) {
-            items(state.posts) { post ->
+            items(state.posts, key = { post -> post.id }) { post ->
                 RpgPostCard(
                     post = post,
                     currentUserId = viewModel.currentUserId,
@@ -143,7 +145,11 @@ fun RpgPostCard(
             Row(verticalAlignment = Alignment.CenterVertically) {
                 if (post.authorPhotoUrl != null) {
                     AsyncImage(
-                        model = post.authorPhotoUrl,
+                        model = ImageRequest.Builder(LocalContext.current)
+                            .data(post.authorPhotoUrl)
+                            .crossfade(true)
+                            .size(100, 100)
+                            .build(),
                         contentDescription = null,
                         modifier = Modifier
                             .size(40.dp)
