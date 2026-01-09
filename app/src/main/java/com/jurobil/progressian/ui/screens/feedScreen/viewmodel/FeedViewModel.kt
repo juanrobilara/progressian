@@ -117,4 +117,17 @@ class FeedViewModel @Inject constructor(
         return formatter.format(Instant.ofEpochMilli(timestamp))
     }
 
+    fun deletePost(post: Post) {
+        viewModelScope.launch {
+            feedRepository.deletePost(post.id)
+        }
+    }
+
+    fun updatePost(post: Post, newContent: String) {
+        if (newContent.isBlank()) return
+        viewModelScope.launch {
+            feedRepository.updatePost(post.id, newContent)
+        }
+    }
+
 }

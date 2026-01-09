@@ -11,7 +11,10 @@ import androidx.compose.material.icons.automirrored.filled.Reply
 import androidx.compose.material.icons.automirrored.filled.Send
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Comment
+import androidx.compose.material.icons.filled.Delete
+import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material.icons.filled.Favorite
+import androidx.compose.material.icons.filled.MoreVert
 import androidx.compose.material.icons.outlined.FavoriteBorder
 import androidx.compose.material3.*
 import androidx.compose.material3.rememberSwipeToDismissBoxState
@@ -51,6 +54,9 @@ fun FeedScreen(
 
 
     var showCreateDialog by remember { mutableStateOf(false) }
+    var postToEdit by remember { mutableStateOf<Post?>(null) }
+    var postToDelete by remember { mutableStateOf<Post?>(null) }
+
     var showCommentsSheet by remember { mutableStateOf(false) }
     var selectedPostIdForComments by remember { mutableStateOf<String?>(null) }
     val sheetState = rememberModalBottomSheetState(
@@ -92,7 +98,9 @@ fun FeedScreen(
                     },
                     onCloneClick = { habit ->
                         viewModel.cloneHabit(habit)
-                    }
+                    },
+                    onEditClick = { postToEdit = post },
+                    onDeleteClick = { postToDelete = post }
                 )
             }
         }
@@ -105,6 +113,41 @@ fun FeedScreen(
             onPublish = {
                 viewModel.createPost(it)
                 showCreateDialog = false
+            }
+        )
+    }
+
+    if (postToEdit != null) {
+        EditPostDialog(
+            post = postToEdit!!,
+            onDismiss = { postToEdit = null },
+            onConfirm = { newContent ->
+                viewModel.updatePost(postToEdit!!, newContent)
+                postToEdit = null
+            }
+        )
+    }
+
+    if (postToDelete != null) {
+        AlertDialog(
+            onDismissRequest = { postToDelete = null },
+            title = { Text("¿Eliminar publicación?") },
+            text = { Text("Esta acción no se puede deshacer. El post desaparecerá del reino para siempre.") },
+            confirmButton = {
+                Button(
+                    onClick = {
+                        viewModel.deletePost(postToDelete!!)
+                        postToDelete = null
+                    },
+                    colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.error)
+                ) {
+                    Text("Eliminar")
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = { postToDelete = null }) {
+                    Text("Cancelar")
+                }
             }
         )
     }
@@ -133,9 +176,12 @@ fun RpgPostCard(
     currentUserId: String,
     onLikeClick: () -> Unit,
     onCommentClick: () -> Unit,
-    onCloneClick: (Habit) -> Unit
+    onCloneClick: (Habit) -> Unit,
+    onEditClick: (Post) -> Unit,
+    onDeleteClick: (Post) -> Unit
 ) {
     var showFullDialog by remember { mutableStateOf(false) }
+    var showMenu by remember { mutableStateOf(false) }
 
     Card(
         modifier = Modifier
@@ -148,7 +194,6 @@ fun RpgPostCard(
         elevation = CardDefaults.cardElevation(defaultElevation = 4.dp)
     ) {
         Column(modifier = Modifier.padding(16.dp)) {
-
 
             Row(verticalAlignment = Alignment.CenterVertically) {
                 if (post.authorPhotoUrl != null) {
@@ -167,7 +212,10 @@ fun RpgPostCard(
                     )
                 } else {
                     Box(
-                        modifier = Modifier.size(40.dp).clip(CircleShape).background(Color.Gray),
+                        modifier = Modifier
+                            .size(40.dp)
+                            .clip(CircleShape)
+                            .background(Color.Gray),
                         contentAlignment = Alignment.Center
                     ) {
                         Text(post.authorName.take(1), color = Color.White)
@@ -189,10 +237,43 @@ fun RpgPostCard(
                         color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f)
                     )
                 }
+
+                Spacer(Modifier.weight(1f))
+
+                if (post.authorId == currentUserId) {
+                    Box {
+                        IconButton(onClick = { showMenu = true }) {
+                            Icon(Icons.Default.MoreVert, contentDescription = "Opciones")
+                        }
+                        DropdownMenu(
+                            expanded = showMenu,
+                            onDismissRequest = { showMenu = false }
+                        ) {
+                            DropdownMenuItem(
+                                text = { Text("Editar") },
+                                onClick = {
+                                    showMenu = false
+                                    onEditClick(post)
+                                },
+                                leadingIcon = { Icon(Icons.Default.Edit, contentDescription = null) }
+                            )
+                            DropdownMenuItem(
+                                text = { Text("Eliminar", color = MaterialTheme.colorScheme.error) },
+                                onClick = {
+                                    showMenu = false
+                                    onDeleteClick(post)
+                                },
+                                leadingIcon = {
+                                    Icon(Icons.Default.Delete, contentDescription = null, tint = MaterialTheme.colorScheme.error)
+                                }
+                            )
+                        }
+                    }
+                }
             }
 
-            HorizontalDivider(modifier = Modifier.padding(vertical = 12.dp), color = MaterialTheme.colorScheme.outline.copy(alpha = 0.2f))
-
+            Spacer(modifier = Modifier.height(8.dp))
+            HorizontalDivider(modifier = Modifier.padding(vertical = 4.dp), color = MaterialTheme.colorScheme.outline.copy(alpha = 0.1f))
 
             Text(
                 text = post.content,
@@ -210,7 +291,6 @@ fun RpgPostCard(
                 }
             }
 
-
             if (post.type == PostType.HABIT_PLAN && post.sharedHabit != null) {
                 Spacer(modifier = Modifier.height(12.dp))
                 Card(
@@ -224,7 +304,6 @@ fun RpgPostCard(
                         Spacer(modifier = Modifier.height(4.dp))
                         Text(post.sharedHabit.title, fontWeight = FontWeight.Bold, style = MaterialTheme.typography.titleMedium)
                         Text("${post.sharedHabit.missions.size} misiones • ${post.sharedHabit.totalXpReward} XP", style = MaterialTheme.typography.bodySmall)
-
 
                         if (post.authorId != currentUserId) {
                             Button(
@@ -240,8 +319,8 @@ fun RpgPostCard(
             }
 
             Spacer(modifier = Modifier.height(8.dp))
-            HorizontalDivider(modifier = Modifier.padding(vertical = 4.dp), color = MaterialTheme.colorScheme.outline.copy(alpha = 0.1f))
 
+            HorizontalDivider(modifier = Modifier.padding(vertical = 4.dp), color = MaterialTheme.colorScheme.outline.copy(alpha = 0.1f))
 
             Row(
                 verticalAlignment = Alignment.CenterVertically,
@@ -517,4 +596,37 @@ fun CommentRow(comment: Comment) {
             )
         }
     }
+}
+
+@Composable
+fun EditPostDialog(
+    post: Post,
+    onDismiss: () -> Unit,
+    onConfirm: (String) -> Unit
+) {
+    var text by remember { mutableStateOf(post.content) }
+
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = { Text("Editar Crónica") },
+        text = {
+            OutlinedTextField(
+                value = text,
+                onValueChange = { text = it },
+                label = { Text("Contenido") },
+                modifier = Modifier.fillMaxWidth(),
+                minLines = 3
+            )
+        },
+        confirmButton = {
+            Button(onClick = { onConfirm(text) }) {
+                Text("Guardar Cambios")
+            }
+        },
+        dismissButton = {
+            TextButton(onClick = onDismiss) {
+                Text("Cancelar")
+            }
+        }
+    )
 }

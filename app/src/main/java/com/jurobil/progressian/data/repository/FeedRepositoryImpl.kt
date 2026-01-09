@@ -143,4 +143,22 @@ class FeedRepositoryImpl @Inject constructor(
         awaitClose { registration.remove() }
     }
 
+    override suspend fun deletePost(postId: String) {
+        try {
+            firestore.collection("posts").document(postId).delete().await()
+        } catch (e: Exception) {
+            Log.e("FeedRepo", "Error eliminando post", e)
+        }
+    }
+
+    override suspend fun updatePost(postId: String, newContent: String) {
+        try {
+            firestore.collection("posts").document(postId)
+                .update("content", newContent)
+                .await()
+        } catch (e: Exception) {
+            Log.e("FeedRepo", "Error actualizando post", e)
+        }
+    }
+
 }

@@ -17,4 +17,8 @@ interface FeedRepository {
     suspend fun addComment(postId: String, content: String)
     suspend fun toggleLike(post: Post)
 
+    suspend fun deletePost(postId: String)
+
+    suspend fun updatePost(postId: String, newContent: String)
+
 }
