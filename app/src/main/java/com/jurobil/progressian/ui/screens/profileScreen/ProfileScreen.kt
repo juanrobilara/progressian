@@ -17,9 +17,11 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import coil.compose.AsyncImage
+import coil.request.ImageRequest
 import com.jurobil.progressian.ui.screens.profileScreen.viewmodel.ProfileViewModel
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -88,7 +90,11 @@ fun ProfileScreen(
             ) {
                 if (!userStats.photoUrl.isNullOrBlank()) {
                     AsyncImage(
-                        model = userStats.photoUrl,
+                        model = ImageRequest.Builder(LocalContext.current)
+                            .data(userStats.photoUrl)
+                            .crossfade(true)
+                            .size(300, 300)
+                            .build(),
                         contentDescription = "Avatar del Héroe",
                         modifier = Modifier.fillMaxSize(),
                         contentScale = ContentScale.Crop
