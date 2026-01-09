@@ -7,12 +7,14 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.Reply
 import androidx.compose.material.icons.automirrored.filled.Send
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Comment
 import androidx.compose.material.icons.filled.Favorite
 import androidx.compose.material.icons.outlined.FavoriteBorder
 import androidx.compose.material3.*
+import androidx.compose.material3.rememberSwipeToDismissBoxState
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -33,6 +35,7 @@ import androidx.hilt.navigation.compose.hiltViewModel
 import coil.compose.AsyncImage
 import coil.request.ImageRequest
 import coil.transform.CircleCropTransformation
+import com.jurobil.progressian.domain.model.Comment
 import com.jurobil.progressian.domain.model.Habit
 import com.jurobil.progressian.domain.model.Post
 import com.jurobil.progressian.domain.model.PostType
@@ -301,6 +304,7 @@ fun RpgPostCard(
     }
 }
 
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun CommentsSection(
     postId: String,
@@ -309,6 +313,7 @@ fun CommentsSection(
     val comments by viewModel.getComments(postId).collectAsState(initial = emptyList())
     var text by remember { mutableStateOf("") }
     val focusRequester = remember { FocusRequester() }
+
 
     LaunchedEffect(Unit) {
         focusRequester.requestFocus()
@@ -325,75 +330,69 @@ fun CommentsSection(
         Spacer(modifier = Modifier.height(16.dp))
 
         if (comments.isEmpty()) {
-            Box(modifier = Modifier.weight(1f).fillMaxWidth(), contentAlignment = Alignment.Center) {
-                Text("Sé el primero en comentar...", color = MaterialTheme.colorScheme.secondary)
+            Box(
+                modifier = Modifier
+                    .weight(1f)
+                    .fillMaxWidth(),
+                contentAlignment = Alignment.Center
+            ) {
+                Text(
+                    "Sé el primero en comentar...",
+                    color = MaterialTheme.colorScheme.secondary,
+                    style = MaterialTheme.typography.bodyMedium
+                )
             }
         } else {
             LazyColumn(
                 modifier = Modifier.weight(1f),
-                verticalArrangement = Arrangement.spacedBy(12.dp),
+                verticalArrangement = Arrangement.spacedBy(16.dp),
                 contentPadding = PaddingValues(bottom = 16.dp)
             ) {
-                items(items = comments, key = { it.id }) { comment ->
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        verticalAlignment = Alignment.Top
-                    ) {
-                        if (comment.userPhotoUrl != null) {
-                            AsyncImage(
-                                model = ImageRequest.Builder(LocalContext.current)
-                                    .data(comment.userPhotoUrl)
-                                    .crossfade(true)
-                                    .size(100, 100)
-                                    .transformations(CircleCropTransformation())
-                                    .build(),
-                                contentDescription = null,
+                items(
+                    items = comments,
+                    key = { it.id }
+                ) { comment ->
+
+
+
+                    val dismissState = rememberSwipeToDismissBoxState(
+                        confirmValueChange = { swipeValue ->
+                            if (swipeValue == SwipeToDismissBoxValue.StartToEnd) {
+
+                                text = "*${comment.userName}* "
+                                focusRequester.requestFocus()
+                                return@rememberSwipeToDismissBoxState false
+                            }
+                            false
+                        }
+                    )
+
+                    SwipeToDismissBox(
+                        state = dismissState,
+                        enableDismissFromStartToEnd = true,
+                        enableDismissFromEndToStart = false,
+                        backgroundContent = {
+
+                            val color = MaterialTheme.colorScheme.primary.copy(alpha = 0.2f)
+                            Box(
                                 modifier = Modifier
-                                    .size(24.dp) // Avatar pequeño de chat
-                                    .border(1.dp, MaterialTheme.colorScheme.primary, CircleShape)
-                            )
-                        } else {
-                            Text(
-                                text = "[${comment.userName.take(1)}]",
-                                color = MaterialTheme.colorScheme.primary,
-                                style = MaterialTheme.typography.labelSmall,
-                                fontFamily = androidx.compose.ui.text.font.FontFamily.Monospace,
-                                modifier = Modifier.align(Alignment.CenterVertically)
-                            )
-                        }
-
-                        Spacer(modifier = Modifier.width(8.dp))
-
-                        Column {
-                            Text(
-                                text = buildAnnotatedString {
-                                    withStyle(style = SpanStyle(
-                                        color = MaterialTheme.colorScheme.primary,
-                                        fontWeight = FontWeight.Bold
-                                    )
-                                    ) {
-                                        append("${comment.userName}: ")
-                                    }
-                                    withStyle(style = SpanStyle(
-                                        color = MaterialTheme.colorScheme.onSurface
-                                    )) {
-                                        append(comment.content)
-                                    }
-                                },
-                                style = MaterialTheme.typography.bodyMedium.copy(
-                                    fontFamily = androidx.compose.ui.text.font.FontFamily.Monospace,
-                                    fontSize = 14.sp
+                                    .fillMaxSize()
+                                    .background(color, shape = MaterialTheme.shapes.small)
+                                    .padding(start = 16.dp),
+                                contentAlignment = Alignment.CenterStart
+                            ) {
+                                Icon(
+                                    imageVector = Icons.AutoMirrored.Filled.Reply,
+                                    contentDescription = "Responder",
+                                    tint = MaterialTheme.colorScheme.primary
                                 )
-                            )
+                            }
+                        },
+                        content = {
 
-                            Text(
-                                text = viewModel.formatTimestamp(comment.timestamp),
-                                style = MaterialTheme.typography.labelSmall,
-                                color = Color.Gray.copy(alpha = 0.5f),
-                                fontSize = 10.sp
-                            )
+                            CommentRow(comment)
                         }
-                    }
+                    )
                 }
             }
         }
@@ -403,16 +402,17 @@ fun CommentsSection(
 
         Row(
             verticalAlignment = Alignment.CenterVertically,
-            modifier = Modifier
-                .fillMaxWidth()
+            modifier = Modifier.fillMaxWidth()
         ) {
             OutlinedTextField(
                 value = text,
                 onValueChange = { text = it },
-                modifier = Modifier.weight(1f)
+                modifier = Modifier
+                    .weight(1f)
                     .focusRequester(focusRequester),
                 placeholder = { Text("Escribe algo...") },
-                singleLine = true
+                singleLine = true,
+                shape = CircleShape
             )
             IconButton(onClick = {
                 if (text.isNotBlank()) {
@@ -420,9 +420,101 @@ fun CommentsSection(
                     text = ""
                 }
             }) {
-                Icon(Icons.AutoMirrored.Filled.Send, contentDescription = "Enviar")
+                Icon(
+                    imageVector = Icons.AutoMirrored.Filled.Send,
+                    contentDescription = "Enviar",
+                    tint = MaterialTheme.colorScheme.primary
+                )
             }
         }
         Spacer(modifier = Modifier.height(16.dp))
+    }
+}
+
+@Composable
+fun CommentRow(comment: Comment) {
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .background(MaterialTheme.colorScheme.surface),
+        verticalAlignment = Alignment.Top
+    ) {
+
+        if (comment.userPhotoUrl != null) {
+            AsyncImage(
+                model = ImageRequest.Builder(LocalContext.current)
+                    .data(comment.userPhotoUrl)
+                    .crossfade(true)
+                    .size(100, 100)
+                    .transformations(CircleCropTransformation())
+                    .build(),
+                contentDescription = null,
+                modifier = Modifier
+                    .size(32.dp)
+                    .border(1.dp, MaterialTheme.colorScheme.primary, CircleShape)
+                    .clip(CircleShape)
+            )
+        } else {
+            Box(
+                modifier = Modifier
+                    .size(32.dp)
+                    .border(1.dp, MaterialTheme.colorScheme.primary, CircleShape)
+                    .clip(CircleShape),
+                contentAlignment = Alignment.Center
+            ) {
+                Text(
+                    text = comment.userName.take(1).uppercase(),
+                    color = MaterialTheme.colorScheme.primary,
+                    style = MaterialTheme.typography.labelMedium,
+                    fontFamily = androidx.compose.ui.text.font.FontFamily.Monospace
+                )
+            }
+        }
+
+        Spacer(modifier = Modifier.width(10.dp))
+
+        Column {
+            val styledText = buildAnnotatedString {
+                withStyle(
+                    style = SpanStyle(
+                        color = MaterialTheme.colorScheme.primary,
+                        fontWeight = FontWeight.Bold,
+                        fontSize = 12.sp
+                    )
+                ) {
+                    append("${comment.userName}\n")
+                }
+
+                val words = comment.content.split(" ")
+                words.forEachIndexed { index, word ->
+
+                    if (word.startsWith("*") && word.endsWith("*") && word.length > 2) {
+                        withStyle(
+                            style = SpanStyle(
+                                color = MaterialTheme.colorScheme.secondary,
+                                fontWeight = FontWeight.Bold,
+                            )
+                        ) {
+                            append(word.removePrefix("*").removeSuffix("*"))
+                        }
+                    } else {
+
+                        withStyle(style = SpanStyle(color = MaterialTheme.colorScheme.onSurface)) {
+                            append(word)
+                        }
+                    }
+                    if (index < words.size - 1) append(" ")
+                }
+            }
+
+            Text(
+                text = styledText,
+                style = MaterialTheme.typography.bodyMedium.copy(
+                    fontFamily = androidx.compose.ui.text.font.FontFamily.Monospace,
+                    fontSize = 13.sp,
+                    lineHeight = 18.sp
+                )
+            )
+        }
     }
 }

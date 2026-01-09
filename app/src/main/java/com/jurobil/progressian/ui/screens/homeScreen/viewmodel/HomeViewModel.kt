@@ -12,6 +12,7 @@ import com.jurobil.progressian.domain.repository.HabitRepository
 import com.jurobil.progressian.domain.repository.UserRepository
 import com.jurobil.progressian.domain.usecases.CompleteMissionUseCase
 import com.jurobil.progressian.domain.usecases.GenerateHabitPlanUseCase
+import com.jurobil.progressian.domain.usecases.RecalculateUserStatsUseCase
 import com.jurobil.progressian.domain.usecases.UpdateMissionStatusUseCase
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -39,7 +40,8 @@ class HomeViewModel @Inject constructor(
     private val settingsRepository: SettingsRepository,
     private val generateHabitPlanUseCase: GenerateHabitPlanUseCase,
     private val completeMissionUseCase: CompleteMissionUseCase,
-    private val updateMissionStatusUseCase: UpdateMissionStatusUseCase
+    private val updateMissionStatusUseCase: UpdateMissionStatusUseCase,
+    private val recalculateUserStatsUseCase: RecalculateUserStatsUseCase
 ) : ViewModel() {
 
 
@@ -131,8 +133,10 @@ class HomeViewModel @Inject constructor(
     fun onMissionChecked(missionId: String, isCompleted: Boolean, xpReward: Int) {
         viewModelScope.launch {
             updateMissionStatusUseCase(missionId, isCompleted, xpReward)
+            recalculateUserStatsUseCase()
         }
     }
+
     fun removeMissionFromPreview(missionId: String) {
         val currentHabit = _uiState.value.generatedHabit ?: return
         val updatedMissions = currentHabit.missions.filter { it.id != missionId }
