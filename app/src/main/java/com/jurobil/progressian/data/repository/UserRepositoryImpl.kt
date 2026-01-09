@@ -288,5 +288,14 @@ class UserRepositoryImpl @Inject constructor(
         return "$publicDomain/$fileName"
     }
 
+    override suspend fun forceUpdateStats(level: Int, currentXp: Int) {
+        val uid = auth.currentUser?.uid ?: return
+        firestore.collection("users").document(uid)
+            .update(mapOf(
+                "currentLevel" to level,
+                "currentXp" to currentXp
+            )).await()
+    }
+
 }
 
