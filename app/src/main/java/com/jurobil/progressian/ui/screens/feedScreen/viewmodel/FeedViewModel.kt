@@ -13,6 +13,9 @@ import com.jurobil.progressian.domain.usecases.GetFeedUseCase
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.launch
+import java.time.Instant
+import java.time.ZoneId
+import java.time.format.DateTimeFormatter
 import java.util.UUID
 import javax.inject.Inject
 
@@ -105,4 +108,13 @@ class FeedViewModel @Inject constructor(
     fun clearMessage() {
         _uiState.update { it.copy(message = null) }
     }
+
+    fun formatTimestamp(timestamp: Long): String {
+        val formatter = DateTimeFormatter
+            .ofPattern("dd/MM/yyyy HH:mm")
+            .withZone(ZoneId.systemDefault())
+
+        return formatter.format(Instant.ofEpochMilli(timestamp))
+    }
+
 }

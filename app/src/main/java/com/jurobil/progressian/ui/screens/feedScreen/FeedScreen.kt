@@ -22,12 +22,17 @@ import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.text.SpanStyle
+import androidx.compose.ui.text.buildAnnotatedString
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.text.withStyle
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
 import coil.compose.AsyncImage
 import coil.request.ImageRequest
+import coil.transform.CircleCropTransformation
 import com.jurobil.progressian.domain.model.Habit
 import com.jurobil.progressian.domain.model.Post
 import com.jurobil.progressian.domain.model.PostType
@@ -326,13 +331,67 @@ fun CommentsSection(
         } else {
             LazyColumn(
                 modifier = Modifier.weight(1f),
-                verticalArrangement = Arrangement.spacedBy(8.dp)
+                verticalArrangement = Arrangement.spacedBy(12.dp),
+                contentPadding = PaddingValues(bottom = 16.dp)
             ) {
-                items(comments) { comment ->
-                    Card(colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha=0.5f))) {
-                        Column(modifier = Modifier.padding(8.dp)) {
-                            Text(comment.userName, fontWeight = FontWeight.Bold, style = MaterialTheme.typography.labelMedium)
-                            Text(comment.content, style = MaterialTheme.typography.bodyMedium)
+                items(items = comments, key = { it.id }) { comment ->
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        verticalAlignment = Alignment.Top
+                    ) {
+                        if (comment.userPhotoUrl != null) {
+                            AsyncImage(
+                                model = ImageRequest.Builder(LocalContext.current)
+                                    .data(comment.userPhotoUrl)
+                                    .crossfade(true)
+                                    .size(100, 100)
+                                    .transformations(CircleCropTransformation())
+                                    .build(),
+                                contentDescription = null,
+                                modifier = Modifier
+                                    .size(24.dp) // Avatar pequeño de chat
+                                    .border(1.dp, MaterialTheme.colorScheme.primary, CircleShape)
+                            )
+                        } else {
+                            Text(
+                                text = "[${comment.userName.take(1)}]",
+                                color = MaterialTheme.colorScheme.primary,
+                                style = MaterialTheme.typography.labelSmall,
+                                fontFamily = androidx.compose.ui.text.font.FontFamily.Monospace,
+                                modifier = Modifier.align(Alignment.CenterVertically)
+                            )
+                        }
+
+                        Spacer(modifier = Modifier.width(8.dp))
+
+                        Column {
+                            Text(
+                                text = buildAnnotatedString {
+                                    withStyle(style = SpanStyle(
+                                        color = MaterialTheme.colorScheme.primary,
+                                        fontWeight = FontWeight.Bold
+                                    )
+                                    ) {
+                                        append("${comment.userName}: ")
+                                    }
+                                    withStyle(style = SpanStyle(
+                                        color = MaterialTheme.colorScheme.onSurface
+                                    )) {
+                                        append(comment.content)
+                                    }
+                                },
+                                style = MaterialTheme.typography.bodyMedium.copy(
+                                    fontFamily = androidx.compose.ui.text.font.FontFamily.Monospace,
+                                    fontSize = 14.sp
+                                )
+                            )
+
+                            Text(
+                                text = viewModel.formatTimestamp(comment.timestamp),
+                                style = MaterialTheme.typography.labelSmall,
+                                color = Color.Gray.copy(alpha = 0.5f),
+                                fontSize = 10.sp
+                            )
                         }
                     }
                 }

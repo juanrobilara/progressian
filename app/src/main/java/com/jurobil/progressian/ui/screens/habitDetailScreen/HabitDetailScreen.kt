@@ -15,6 +15,7 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Add
@@ -27,6 +28,7 @@ import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.Checkbox
+import androidx.compose.material3.CheckboxDefaults
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.FloatingActionButton
 import androidx.compose.material3.HorizontalDivider
@@ -275,22 +277,37 @@ fun RpgMissionCard(
     onClick: () -> Unit,
     onDelete: () -> Unit
 ) {
+
+    val isDone = mission.isCompleted
+    val borderColor = if (isDone) Color.Gray.copy(alpha = 0.5f) else MaterialTheme.colorScheme.primary
+    val containerColor = if (isDone) Color.Black.copy(alpha = 0.3f) else Color(0xFF1E1E1E)
+    val textColor = if (isDone) Color.Gray else Color.White
+
     Card(
         modifier = Modifier
             .fillMaxWidth()
             .clickable(onClick = onClick),
         colors = CardDefaults.cardColors(
-            containerColor = if (mission.isCompleted) MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.6f)
-            else MaterialTheme.colorScheme.surface
+            containerColor = containerColor
         ),
-        elevation = CardDefaults.cardElevation(4.dp),
-        border = BorderStroke(1.dp, MaterialTheme.colorScheme.outline.copy(alpha = 0.2f))
+
+        border = BorderStroke(2.dp, borderColor),
+        shape = RoundedCornerShape(8.dp),
+        elevation = CardDefaults.cardElevation(if (isDone) 0.dp else 4.dp)
     ) {
         Row(
-            modifier = Modifier.padding(12.dp),
+            modifier = Modifier.padding(16.dp),
             verticalAlignment = Alignment.CenterVertically
         ) {
-            Checkbox(checked = mission.isCompleted, onCheckedChange = onCheck)
+            Checkbox(
+                checked = mission.isCompleted,
+                onCheckedChange = onCheck,
+                colors = CheckboxDefaults.colors(
+                    checkedColor = Color.Gray,
+                    uncheckedColor = MaterialTheme.colorScheme.primary,
+                    checkmarkColor = Color.White
+                )
+            )
 
             Spacer(modifier = Modifier.width(12.dp))
 
@@ -298,19 +315,28 @@ fun RpgMissionCard(
                 Text(
                     text = mission.title,
                     style = MaterialTheme.typography.titleMedium,
-                    textDecoration = if (mission.isCompleted) TextDecoration.LineThrough else null
+                    fontWeight = if (isDone) FontWeight.Normal else FontWeight.Bold,
+                    color = textColor,
+                    textDecoration = if (isDone) TextDecoration.LineThrough else null
                 )
-                Spacer(modifier = Modifier.height(4.dp))
-                Row(verticalAlignment = Alignment.CenterVertically) {
-                    Badge(containerColor = MaterialTheme.colorScheme.secondaryContainer) {
-                        Text("${mission.xpReward} XP", color = MaterialTheme.colorScheme.onSecondaryContainer)
+
+                if (!isDone) {
+                    Spacer(modifier = Modifier.height(6.dp))
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+
+                        Text(
+                            text = "[ ${mission.xpReward} XP ]",
+                            style = MaterialTheme.typography.labelSmall,
+                            color = MaterialTheme.colorScheme.secondary,
+                            fontFamily = androidx.compose.ui.text.font.FontFamily.Monospace
+                        )
+                        Spacer(modifier = Modifier.width(8.dp))
+                        Text(
+                            text = "• ${mission.difficulty.name}",
+                            style = MaterialTheme.typography.labelSmall,
+                            color = Color.Gray
+                        )
                     }
-                    Spacer(modifier = Modifier.width(8.dp))
-                    Text(
-                        text = mission.difficulty.name,
-                        style = MaterialTheme.typography.labelSmall,
-                        color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f)
-                    )
                 }
             }
 
@@ -318,7 +344,7 @@ fun RpgMissionCard(
                 Icon(
                     Icons.Default.Delete,
                     contentDescription = "Eliminar",
-                    tint = MaterialTheme.colorScheme.error.copy(alpha = 0.7f),
+                    tint = if (isDone) Color.Gray.copy(alpha = 0.5f) else MaterialTheme.colorScheme.error,
                     modifier = Modifier.size(20.dp)
                 )
             }
