@@ -5,6 +5,7 @@ import androidx.lifecycle.viewModelScope
 import com.jurobil.progressian.domain.model.Comment
 import com.jurobil.progressian.domain.model.Habit
 import com.jurobil.progressian.domain.model.Post
+import com.jurobil.progressian.domain.model.UserStats
 import com.jurobil.progressian.domain.repository.FeedRepository
 import com.jurobil.progressian.domain.repository.HabitRepository
 import com.jurobil.progressian.domain.repository.UserRepository
@@ -22,7 +23,9 @@ import javax.inject.Inject
 data class FeedUiState(
     val posts: List<Post> = emptyList(),
     val isLoading: Boolean = false,
-    val message: String? = null
+    val message: String? = null,
+    val selectedUserProfile: UserStats? = null,
+    val isProfileLoading: Boolean = false
 )
 
 @HiltViewModel
@@ -127,6 +130,46 @@ class FeedViewModel @Inject constructor(
         if (newContent.isBlank()) return
         viewModelScope.launch {
             feedRepository.updatePost(post.id, newContent)
+        }
+    }
+
+
+    //AMISTADES
+
+    fun onSelectUser(userId: String) {
+        viewModelScope.launch {
+            _uiState.update { it.copy(isProfileLoading = true, selectedUserProfile = null) }
+            val userStats = userRepository.getUserProfile(userId)
+            _uiState.update { it.copy(isProfileLoading = false, selectedUserProfile = userStats) }
+        }
+    }
+
+    fun onDismissUserProfile() {
+        _uiState.update { it.copy(selectedUserProfile = null) }
+    }
+
+    fun toggleFollow(targetUserId: String) {
+        val currentUser = currentUserId
+        val selectedUser = _uiState.value.selectedUserProfile ?: return
+
+        viewModelScope.launch {
+            val isFollowing = selectedUser.followers.contains(currentUser)
+
+            val updatedFollowers = if (isFollowing) {
+                selectedUser.followers - currentUser
+            } else {
+                selectedUser.followers + currentUser
+            }
+
+            _uiState.update {
+                it.copy(selectedUserProfile = selectedUser.copy(followers = updatedFollowers))
+            }
+
+            if (isFollowing) {
+                userRepository.unfollowUser(targetUserId)
+            } else {
+                userRepository.followUser(targetUserId)
+            }
         }
     }
 

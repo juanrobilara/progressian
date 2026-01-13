@@ -21,4 +21,12 @@ interface UserRepository {
     suspend fun uploadAvatar(uri: Uri): String
 
     suspend fun forceUpdateStats(level: Int, currentXp: Int)
+
+    suspend fun getUserProfile(userId: String): UserStats?
+
+    suspend fun followUser(targetUserId: String)
+
+    suspend fun unfollowUser(targetUserId: String)
+
+    suspend fun updateBio(newBio: String)
 }

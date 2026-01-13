@@ -8,5 +8,8 @@ data class UserStats(
     val currentLevel: Int = 1,
     val currentXp: Int = 0,
     val coins: Int = 0,
-    val itemsOwned: List<String> = emptyList()
+    val itemsOwned: List<String> = emptyList(),
+    val bio: String = "",
+    val followers: List<String> = emptyList(),
+    val following: List<String> = emptyList()
 )
