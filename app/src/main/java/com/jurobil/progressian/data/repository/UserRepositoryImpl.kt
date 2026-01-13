@@ -9,6 +9,7 @@ import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.auth.FirebaseAuthUserCollisionException
 import com.google.firebase.auth.GoogleAuthProvider
 import com.google.firebase.auth.userProfileChangeRequest
+import com.google.firebase.firestore.FieldValue
 import com.google.firebase.firestore.FirebaseFirestore
 import com.google.firebase.firestore.ListenerRegistration
 import com.jurobil.progressian.BuildConfig
@@ -295,6 +296,46 @@ class UserRepositoryImpl @Inject constructor(
                 "currentLevel" to level,
                 "currentXp" to currentXp
             )).await()
+    }
+
+    override suspend fun getUserProfile(userId: String): UserStats? {
+        return try {
+            val snapshot = firestore.collection("users").document(userId).get().await()
+            snapshot.toObject(UserStats::class.java)
+        } catch (e: Exception) {
+            null
+        }
+    }
+
+    override suspend fun followUser(targetUserId: String) {
+        val currentUserId = auth.currentUser?.uid ?: return
+
+        val batch = firestore.batch()
+        val myRef = firestore.collection("users").document(currentUserId)
+        batch.update(myRef, "following", FieldValue.arrayUnion(targetUserId))
+
+        val targetRef = firestore.collection("users").document(targetUserId)
+        batch.update(targetRef, "followers", FieldValue.arrayUnion(currentUserId))
+
+        batch.commit().await()
+    }
+
+    override suspend fun unfollowUser(targetUserId: String) {
+        val currentUserId = auth.currentUser?.uid ?: return
+
+        val batch = firestore.batch()
+        val myRef = firestore.collection("users").document(currentUserId)
+        batch.update(myRef, "following", FieldValue.arrayRemove(targetUserId))
+
+        val targetRef = firestore.collection("users").document(targetUserId)
+        batch.update(targetRef, "followers", FieldValue.arrayRemove(currentUserId))
+
+        batch.commit().await()
+    }
+
+    override suspend fun updateBio(newBio: String) {
+        val uid = auth.currentUser?.uid ?: return
+        firestore.collection("users").document(uid).update("bio", newBio).await()
     }
 
 }
