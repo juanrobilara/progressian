@@ -299,7 +299,7 @@ fun RpgPostCard(
                 ) {
                     Column(modifier = Modifier.padding(12.dp).fillMaxWidth()) {
                         Row(verticalAlignment = Alignment.CenterVertically) {
-                            Text("📜 Pergamino de Hábito", style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.primary)
+                            Text("Pergamino de Hábito", style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.primary)
                         }
                         Spacer(modifier = Modifier.height(4.dp))
                         Text(post.sharedHabit.title, fontWeight = FontWeight.Bold, style = MaterialTheme.typography.titleMedium)
