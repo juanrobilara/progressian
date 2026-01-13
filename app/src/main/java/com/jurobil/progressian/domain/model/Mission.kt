@@ -2,12 +2,12 @@ package com.jurobil.progressian.domain.model
 
 data class Mission(
     val id: String = java.util.UUID.randomUUID().toString(),
-    val habitId: String,
-    val title: String,
-    val description: String,
-    val difficulty: Difficulty,
+    val habitId: String = "",
+    val title: String = "",
+    val description: String = "",
+    val difficulty: Difficulty = Difficulty.EASY,
     val isCompleted: Boolean = false,
-    val xpReward: Int,
+    val xpReward: Int = 0,
     val imageUrl: String? = null
 )
 

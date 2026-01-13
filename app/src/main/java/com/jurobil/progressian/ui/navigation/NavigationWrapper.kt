@@ -71,9 +71,6 @@ fun NavigationWrapper() {
                     onHabitClick = { habitId ->
                         navController.navigate(Routes.HabitDetail(habitId).route)
                     },
-                    onSettingsClick = {
-                        navController.navigate(Routes.Settings.route)
-                    },
                     onNavigateToLogin = {
                         navController.navigate(Routes.Login.route)
                     }

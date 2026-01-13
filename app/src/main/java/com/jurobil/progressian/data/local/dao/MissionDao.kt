@@ -1,6 +1,8 @@
 package com.jurobil.progressian.data.local.dao
 
 import androidx.room.Dao
+import androidx.room.Insert
+import androidx.room.OnConflictStrategy
 import androidx.room.Query
 import com.jurobil.progressian.data.local.entity.MissionEntity
 
@@ -8,4 +10,13 @@ import com.jurobil.progressian.data.local.entity.MissionEntity
 interface MissionDao {
     @Query("SELECT * FROM missions WHERE id = :id")
     suspend fun getMissionById(id: String): MissionEntity?
+
+    @Query("UPDATE missions SET title = :title, xpReward = :xpReward WHERE id = :missionId")
+    suspend fun updateMissionDetails(missionId: String, title: String, xpReward: Int)
+
+    @Query("DELETE FROM missions WHERE id = :missionId")
+    suspend fun deleteMission(missionId: String)
+
+    @Insert(onConflict = OnConflictStrategy.REPLACE)
+    suspend fun insertMission(mission: MissionEntity)
 }

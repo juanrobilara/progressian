@@ -19,4 +19,6 @@ interface UserRepository {
     suspend fun updateUserProfile(name: String, photoUrl: String?): Result<Boolean>
 
     suspend fun uploadAvatar(uri: Uri): String
+
+    suspend fun forceUpdateStats(level: Int, currentXp: Int)
 }
