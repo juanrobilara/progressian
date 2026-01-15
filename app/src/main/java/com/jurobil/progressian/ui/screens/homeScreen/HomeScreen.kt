@@ -27,6 +27,11 @@ import androidx.compose.material.icons.automirrored.filled.Send
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.Close
+import androidx.compose.material.icons.filled.EmojiEvents
+import androidx.compose.material.icons.filled.Flag
+import androidx.compose.material.icons.filled.KeyboardArrowDown
+import androidx.compose.material.icons.filled.KeyboardArrowUp
+import androidx.compose.material.icons.filled.Repeat
 import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material.icons.filled.Star
 import androidx.compose.material3.*
@@ -44,9 +49,11 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.compose.ui.zIndex
 import androidx.hilt.navigation.compose.hiltViewModel
 import coil.compose.AsyncImage
 import com.jurobil.progressian.domain.model.Habit
+import com.jurobil.progressian.domain.model.HabitType
 import com.jurobil.progressian.domain.model.Mission
 import com.jurobil.progressian.ui.components.RpgButton
 import com.jurobil.progressian.ui.components.RpgTextField
@@ -83,7 +90,6 @@ fun HomeScreen(
         if (uri != null && habitIdToUpdateImage != null) {
             val flag = Intent.FLAG_GRANT_READ_URI_PERMISSION
             context.contentResolver.takePersistableUriPermission(uri, flag)
-
             viewModel.updateHabitImage(habitIdToUpdateImage!!, uri.toString())
         }
         habitIdToUpdateImage = null
@@ -94,20 +100,11 @@ fun HomeScreen(
         AlertDialog(
             onDismissRequest = {},
             containerColor = MaterialTheme.colorScheme.surface,
-            titleContentColor = MaterialTheme.colorScheme.primary,
-            textContentColor = MaterialTheme.colorScheme.onSurface,
-            title = {
-                Text("¡Bienvenido Aventurero!", style = MaterialTheme.typography.headlineMedium)
-            },
-            text = {
-                Text("Progressian convierte tu vida en un RPG.\n\n1. Crea Hábitos.\n2. Completa Misiones.\n3. Gana XP y sube de nivel.")
-            },
-            confirmButton = {
-                RpgButton(text = "Comenzar Aventura", onClick = { viewModel.onDismissWelcome() })
-            }
+            title = { Text("¡Bienvenido Aventurero!", style = MaterialTheme.typography.headlineMedium) },
+            text = { Text("Progressian convierte tu vida en un RPG.\n\n1. Crea Rutinas.\n2. Completa Misiones.\n3. Gana XP y sube de nivel.") },
+            confirmButton = { RpgButton(text = "Comenzar Aventura", onClick = { viewModel.onDismissWelcome() }) }
         )
     }
-
 
     LaunchedEffect(state.error) {
         if (state.error != null) {
@@ -116,44 +113,27 @@ fun HomeScreen(
         }
     }
 
-
     if (state.showLoginWall) {
         AlertDialog(
             onDismissRequest = { viewModel.dismissLoginWall() },
             icon = { Icon(Icons.Default.Star, contentDescription = null) },
             title = { Text("¡Desbloquea todo el potencial!") },
-            text = {
-                Text("Has alcanzado el límite de 2 hábitos del modo invitado. \n\nRegístrate gratis para guardar tu progreso en la nube, acceder desde otros dispositivos y crear hábitos ilimitados.")
-            },
+            text = { Text("Has alcanzado el límite del modo invitado.\n\nRegístrate para guardar tu progreso y crear hábitos ilimitados.") },
             confirmButton = {
-                Button(
-                    onClick = {
-                        viewModel.dismissLoginWall()
-                        onNavigateToLogin()
-                    }
-                ) {
-                    Text("Crear cuenta / Iniciar Sesión")
-                }
+                Button(onClick = { viewModel.dismissLoginWall(); onNavigateToLogin() }) { Text("Crear cuenta / Login") }
             },
             dismissButton = {
-                TextButton(onClick = { viewModel.dismissLoginWall() }) {
-                    Text("Quizás más tarde")
-                }
+                TextButton(onClick = { viewModel.dismissLoginWall() }) { Text("Quizás más tarde") }
             }
         )
     }
 
-    if (state.generatedHabit != null) {
-        HabitPreviewDialog(
-            habit = state.generatedHabit!!,
-            onConfirm = { viewModel.onAcceptGeneratedHabit() },
-            onDismiss = { viewModel.onRejectGeneratedHabit() },
-            onDeleteMission = { missionId ->
-                viewModel.removeMissionFromPreview(missionId)
-            },
-            onAddMission = { title ->
-                viewModel.addMissionToPreview(title)
-            }
+    if (state.generatedHabitPlan != null) {
+        PlanPreviewDialog(
+            habits = state.generatedHabitPlan!!,
+            onConfirm = { viewModel.onAcceptGeneratedPlan() },
+            onDismiss = { viewModel.onRejectGeneratedPlan() },
+            onRemoveHabit = { habitId -> viewModel.removeHabitFromPlan(habitId) }
         )
     }
 
@@ -163,12 +143,7 @@ fun HomeScreen(
             title = { Text("Gestionar Hábito") },
             text = { Text("¿Qué deseas hacer con '${selectedHabit?.title}'?") },
             confirmButton = {
-                TextButton(
-                    onClick = {
-                        showActionDialog = false
-                        showEditDialog = true
-                    }
-                ) { Text("Editar") }
+                TextButton(onClick = { showActionDialog = false; showEditDialog = true }) { Text("Editar") }
             },
             dismissButton = {
                 TextButton(
@@ -186,10 +161,7 @@ fun HomeScreen(
     if (showEditDialog && selectedHabit != null) {
         EditHabitDialog(
             habit = selectedHabit!!,
-            onDismiss = {
-                showEditDialog = false
-                selectedHabit = null
-            },
+            onDismiss = { showEditDialog = false; selectedHabit = null },
             onConfirm = { newTitle, newDesc ->
                 viewModel.onUpdateHabitTitleDescription(selectedHabit!!.id, newTitle, newDesc)
                 showEditDialog = false
@@ -197,7 +169,6 @@ fun HomeScreen(
             }
         )
     }
-
 
     Box(
         modifier = Modifier
@@ -216,9 +187,7 @@ fun HomeScreen(
             snackbarHost = { SnackbarHost(hostState = snackbarHostState) },
             bottomBar = {
                 Row(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(8.dp),
+                    modifier = Modifier.fillMaxWidth().padding(8.dp),
                     verticalAlignment = Alignment.CenterVertically
                 ) {
                     RpgTextField(
@@ -229,21 +198,23 @@ fun HomeScreen(
                     )
                     Spacer(modifier = Modifier.width(8.dp))
                     IconButton(
-                        onClick = {
-                            viewModel.onSendMessage(promptText)
-                            promptText = ""
-                        },
+                        onClick = { viewModel.onSendMessage(promptText); promptText = "" },
                         enabled = !state.isLoading && promptText.isNotBlank()
                     ) {
-                        if (state.isLoading) {
-                            CircularProgressIndicator(modifier = Modifier.size(24.dp))
-                        } else {
-                            Icon(Icons.AutoMirrored.Filled.Send, contentDescription = "Enviar")
-                        }
+                        if (state.isLoading) CircularProgressIndicator(modifier = Modifier.size(24.dp))
+                        else Icon(Icons.AutoMirrored.Filled.Send, contentDescription = "Enviar")
                     }
                 }
             }
         ) { padding ->
+
+            val routines = state.habits.filter { it.type == HabitType.ROUTINE }
+            val routineIds = routines.map { it.id }.toSet()
+            val allQuests = state.habits.filter { it.type == HabitType.QUEST }
+
+            val (linkedQuests, orphanQuests) = allQuests.partition { quest ->
+                quest.parentId != null && routineIds.contains(quest.parentId)
+            }
 
             LazyColumn(
                 state = listState,
@@ -252,36 +223,97 @@ fun HomeScreen(
                     .padding(bottom = padding.calculateBottomPadding()),
                 verticalArrangement = Arrangement.spacedBy(16.dp)
             ) {
-                item {
-                    HomeHeader(state = state)
-                }
-                item {
-                    Text(
-                        "Mis Hábitos",
-                        style = MaterialTheme.typography.headlineSmall,
-                        modifier = Modifier.padding(horizontal = 16.dp)
-                    )
-                }
+                item { HomeHeader(state = state) }
 
-                items(state.habits) { habit ->
-                    Box(modifier = Modifier.padding(horizontal = 16.dp)) {
-                        HabitCard(
-                            habit = habit,
-                            onClick = { onHabitClick(habit.id) },
-                            onMissionCheck = { missionId, isDone, xp ->
-                                viewModel.onMissionChecked(missionId, isDone, xp)
+                if (routines.isNotEmpty()) {
+                    item {
+                        Text(
+                            "Aventuras Activas",
+                            style = MaterialTheme.typography.headlineSmall,
+                            modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp)
+                        )
+                    }
+
+                    items(routines) { routine ->
+                        val myQuests = linkedQuests
+                            .filter { it.parentId == routine.id }
+                            .sortedBy { it.orderIndex }
+
+                        ExpandableHabitGroup(
+                            routine = routine,
+                            quests = myQuests,
+                            onHabitClick = onHabitClick,
+                            onMissionCheck = { mId, check, xp ->
+                                viewModel.onMissionChecked(
+                                    mId,
+                                    check,
+                                    xp
+                                )
                             },
                             onImageClick = {
-                                habitIdToUpdateImage = habit.id
+                                habitIdToUpdateImage = routine.id
                                 photoPickerLauncher.launch(
-                                    PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.ImageOnly)
+                                    PickVisualMediaRequest(
+                                        ActivityResultContracts.PickVisualMedia.ImageOnly
+                                    )
                                 )
                             },
                             onLongClick = {
-                                selectedHabit = habit
+                                selectedHabit = routine
                                 showActionDialog = true
                             }
                         )
+                    }
+                }
+
+                if (orphanQuests.isNotEmpty()) {
+                    item {
+                        SectionHeader(
+                            title = "Misiones Secundarias & Sueltas",
+                            icon = Icons.Default.Flag
+                        )
+                    }
+
+                    items(orphanQuests) { quest ->
+                        Box(modifier = Modifier.padding(horizontal = 16.dp)) {
+                            HabitCard(
+                                habit = quest,
+                                onClick = { onHabitClick(quest.id) },
+                                onMissionCheck = { mId, check, xp ->
+                                    viewModel.onMissionChecked(
+                                        mId,
+                                        check,
+                                        xp
+                                    )
+                                },
+                                onImageClick = {
+                                    habitIdToUpdateImage = quest.id
+                                    photoPickerLauncher.launch(
+                                        PickVisualMediaRequest(
+                                            ActivityResultContracts.PickVisualMedia.ImageOnly
+                                        )
+                                    )
+                                },
+                                onLongClick = {
+                                    selectedHabit = quest
+                                    showActionDialog = true
+                                }
+                            )
+                        }
+                    }
+                }
+
+                if (routines.isEmpty() && orphanQuests.isEmpty() && !state.isLoading) {
+                    item {
+                        Box(
+                            modifier = Modifier.fillMaxWidth().padding(32.dp),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            Text(
+                                "Escribe un objetivo abajo para comenzar tu primera aventura.",
+                                color = Color.Gray
+                            )
+                        }
                     }
                 }
 
@@ -316,7 +348,6 @@ fun HomeScreen(
                     fontWeight = FontWeight.Bold,
                     color = MaterialTheme.colorScheme.onBackground
                 )
-
                 Spacer(modifier = Modifier.width(12.dp))
                 Surface(
                     color = MaterialTheme.colorScheme.primaryContainer,
@@ -333,6 +364,170 @@ fun HomeScreen(
             }
         }
     }
+}
+
+@Composable
+fun ExpandableHabitGroup(
+    routine: Habit,
+    quests: List<Habit>,
+    onHabitClick: (String) -> Unit,
+    onMissionCheck: (String, Boolean, Int) -> Unit,
+    onImageClick: () -> Unit,
+    onLongClick: () -> Unit
+) {
+    var expanded by remember { mutableStateOf(false) }
+
+    Column(modifier = Modifier.padding(horizontal = 16.dp)) {
+        Box {
+            HabitCard(
+                habit = routine,
+                onClick = { onHabitClick(routine.id) },
+                onMissionCheck = onMissionCheck,
+                onImageClick = onImageClick,
+                onLongClick = onLongClick
+            )
+        }
+
+        if (quests.isNotEmpty()) {
+            Box(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .offset(y = (-8).dp)
+                    .zIndex(-1f)
+            ) {
+                TextButton(
+                    onClick = { expanded = !expanded },
+                    modifier = Modifier.align(Alignment.Center)
+                ) {
+                    Icon(
+                        if (expanded) Icons.Default.KeyboardArrowUp else Icons.Default.KeyboardArrowDown,
+                        contentDescription = null,
+                        modifier = Modifier.size(18.dp)
+                    )
+                    Spacer(modifier = Modifier.width(4.dp))
+                    Text(
+                        if (expanded) "Ocultar Hazañas" else "Ver ${quests.size} Hazañas Épicas",
+                        style = MaterialTheme.typography.labelSmall
+                    )
+                }
+            }
+        }
+
+        AnimatedVisibility(visible = expanded) {
+            Column(
+                modifier = Modifier
+                    .padding(start = 16.dp, top = 4.dp, bottom = 16.dp)
+                    .border(
+                        width = 1.dp,
+                        color = MaterialTheme.colorScheme.primary.copy(alpha = 0.2f),
+                        shape = RoundedCornerShape(bottomStart = 16.dp, bottomEnd = 16.dp)
+                    )
+                    .padding(12.dp),
+                verticalArrangement = Arrangement.spacedBy(12.dp)
+            ) {
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Icon(Icons.Default.Flag, contentDescription = null, tint = MaterialTheme.colorScheme.secondary, modifier = Modifier.size(16.dp))
+                    Spacer(modifier = Modifier.width(8.dp))
+                    Text(
+                        "Hoja de Ruta: ${routine.title}",
+                        style = MaterialTheme.typography.labelSmall,
+                        color = MaterialTheme.colorScheme.secondary,
+                        fontWeight = FontWeight.Bold
+                    )
+                }
+
+                quests.forEach { quest ->
+                    HabitCard(
+                        habit = quest,
+                        onClick = { onHabitClick(quest.id) },
+                        onMissionCheck = onMissionCheck,
+                        onImageClick = {},
+                        onLongClick = {}
+                    )
+                }
+            }
+        }
+    }
+}
+
+@Composable
+fun SectionHeader(title: String, icon: androidx.compose.ui.graphics.vector.ImageVector) {
+    Row(
+        modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp),
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        Icon(icon, contentDescription = null, tint = MaterialTheme.colorScheme.primary, modifier = Modifier.size(20.dp))
+        Spacer(modifier = Modifier.width(8.dp))
+        Text(
+            text = title.uppercase(),
+            style = MaterialTheme.typography.labelLarge,
+            color = MaterialTheme.colorScheme.primary,
+            fontWeight = FontWeight.Bold
+        )
+    }
+}
+
+@Composable
+fun PlanPreviewDialog(
+    habits: List<Habit>,
+    onConfirm: () -> Unit,
+    onDismiss: () -> Unit,
+    onRemoveHabit: (String) -> Unit
+) {
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = { Text("Plan Estratégico Generado") },
+        text = {
+            Column {
+                Text(
+                    "La IA ha diseñado este camino para ti. Revisa las rutinas y las hazañas propuestas.",
+                    style = MaterialTheme.typography.bodySmall
+                )
+                Spacer(modifier = Modifier.height(16.dp))
+
+                LazyColumn(
+                    modifier = Modifier.heightIn(max = 300.dp),
+                    verticalArrangement = Arrangement.spacedBy(8.dp)
+                ) {
+                    items(habits) { habit ->
+                        val isRoutine = habit.type == HabitType.ROUTINE
+                        val icon = if (isRoutine) Icons.Default.Repeat else Icons.Default.Flag
+                        val color = if (isRoutine) MaterialTheme.colorScheme.secondary else MaterialTheme.colorScheme.tertiary
+
+                        Card(
+                            colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant),
+                            border = BorderStroke(1.dp, color.copy(alpha = 0.5f))
+                        ) {
+                            Row(
+                                modifier = Modifier.padding(8.dp).fillMaxWidth(),
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
+                                Icon(icon, contentDescription = null, tint = color)
+                                Spacer(modifier = Modifier.width(8.dp))
+                                Column(modifier = Modifier.weight(1f)) {
+                                    Text(habit.title, style = MaterialTheme.typography.titleSmall, fontWeight = FontWeight.Bold)
+                                    Text(
+                                        if (isRoutine) "Rutina Diaria" else "Hito Único",
+                                        style = MaterialTheme.typography.labelSmall,
+                                        color = Color.Gray
+                                    )
+                                }
+                                IconButton(onClick = { onRemoveHabit(habit.id) }) {
+                                    Icon(Icons.Default.Close, contentDescription = "Descartar", tint = MaterialTheme.colorScheme.error)
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        confirmButton = {
+            Button(onClick = onConfirm) { Text("Aceptar Plan") }
+        },
+        dismissButton = {
+            TextButton(onClick = onDismiss) { Text("Cancelar") }
+        }
+    )
 }
 
 @OptIn(ExperimentalFoundationApi::class)

@@ -28,7 +28,7 @@ data class HomeUiState(
     val isLoading: Boolean = false,
     val habits: List<Habit> = emptyList(),
     val userStats: UserStats = UserStats(),
-    val generatedHabit: Habit? = null,
+    val generatedHabitPlan: List<Habit>? = null,
     val error: String? = null,
     val showLoginWall: Boolean = false
 )
@@ -43,7 +43,6 @@ class HomeViewModel @Inject constructor(
     private val updateMissionStatusUseCase: UpdateMissionStatusUseCase,
     private val recalculateUserStatsUseCase: RecalculateUserStatsUseCase
 ) : ViewModel() {
-
 
     private val _uiState = MutableStateFlow(HomeUiState())
     val uiState: StateFlow<HomeUiState> = combine(
@@ -67,106 +66,81 @@ class HomeViewModel @Inject constructor(
     }
 
     private fun loginAnonymously() {
-        viewModelScope.launch {
-            userRepository.loginAnonymously()
-        }
+        viewModelScope.launch { userRepository.loginAnonymously() }
     }
 
     val showWelcomeDialog = settingsRepository.isFirstTime
-        .stateIn(
-            scope = viewModelScope,
-            started = SharingStarted.WhileSubscribed(5000),
-            initialValue = false
-        )
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), false)
 
     fun onDismissWelcome() {
-        viewModelScope.launch {
-            settingsRepository.completeOnboarding()
-        }
+        viewModelScope.launch { settingsRepository.completeOnboarding() }
     }
 
     fun onSendMessage(message: String) {
         if (message.isBlank()) return
 
         val isAnonymous = userRepository.isUserAnonymous()
+
         val habitCount = uiState.value.habits.size
 
-        if (isAnonymous && habitCount >= 2) {
+        if (isAnonymous && habitCount >= 5) {
             _uiState.update { it.copy(showLoginWall = true) }
             return
         }
 
+        viewModelScope.launch {
+            _uiState.update { it.copy(isLoading = true, error = null) }
 
-            viewModelScope.launch {
-                _uiState.update { it.copy(isLoading = true, error = null) }
 
-                val result = generateHabitPlanUseCase(message)
+            val result = generateHabitPlanUseCase(message)
 
-                if (result.isSuccess) {
-                    val habit = result.getOrNull()
-                    if (habit != null) {
-                        _uiState.update { it.copy(isLoading = false, generatedHabit = habit) }
-                    }
-                } else if (result is Result.Error) {
+            when (result) {
+                is Result.Success -> {
+                    _uiState.update { it.copy(isLoading = false, generatedHabitPlan = result.data) }
+                }
+                is Result.Error -> {
                     _uiState.update { it.copy(isLoading = false, error = result.exception.message) }
                 }
             }
         }
-
-    fun dismissLoginWall() {
-            _uiState.update { it.copy(showLoginWall = false) }
     }
 
-    fun onAcceptGeneratedHabit() {
-        val habitToSave = _uiState.value.generatedHabit ?: return
+    fun dismissLoginWall() {
+        _uiState.update { it.copy(showLoginWall = false) }
+    }
+
+    fun onAcceptGeneratedPlan() {
+        val plan = _uiState.value.generatedHabitPlan ?: return
 
         viewModelScope.launch {
-            habitRepository.saveHabit(habitToSave)
-            _uiState.update { it.copy(generatedHabit = null) }
+
+            plan.forEach { habit ->
+                habitRepository.saveHabit(habit)
+            }
+            _uiState.update { it.copy(generatedHabitPlan = null) }
         }
     }
 
-    fun onRejectGeneratedHabit() {
-        _uiState.update { it.copy(generatedHabit = null) }
+    fun onRejectGeneratedPlan() {
+        _uiState.update { it.copy(generatedHabitPlan = null) }
+    }
+
+
+    fun removeHabitFromPlan(habitId: String) {
+        val currentPlan = _uiState.value.generatedHabitPlan ?: return
+        val updatedPlan = currentPlan.filter { it.id != habitId }
+
+        if (updatedPlan.isEmpty()) {
+            onRejectGeneratedPlan()
+        } else {
+            _uiState.update { it.copy(generatedHabitPlan = updatedPlan) }
+        }
     }
 
     fun onMissionChecked(missionId: String, isCompleted: Boolean, xpReward: Int) {
         viewModelScope.launch {
             updateMissionStatusUseCase(missionId, isCompleted, xpReward)
             recalculateUserStatsUseCase()
-        }
-    }
-
-    fun removeMissionFromPreview(missionId: String) {
-        val currentHabit = _uiState.value.generatedHabit ?: return
-        val updatedMissions = currentHabit.missions.filter { it.id != missionId }
-
-
-        val newTotalXp = updatedMissions.sumOf { it.xpReward }
-
-        _uiState.update {
-            it.copy(generatedHabit = currentHabit.copy(missions = updatedMissions, totalXpReward = newTotalXp))
-        }
-    }
-
-    fun addMissionToPreview(title: String) {
-        val currentHabit = _uiState.value.generatedHabit ?: return
-        if (title.isBlank()) return
-
-        val newMission = Mission(
-            habitId = currentHabit.id,
-            title = title,
-            description = "Misión personalizada",
-            difficulty = Difficulty.EASY,
-            xpReward = 10,
-            isCompleted = false
-        )
-
-        val updatedMissions = currentHabit.missions + newMission
-        val newTotalXp = updatedMissions.sumOf { it.xpReward }
-
-        _uiState.update {
-            it.copy(generatedHabit = currentHabit.copy(missions = updatedMissions, totalXpReward = newTotalXp))
         }
     }
 
@@ -181,28 +155,21 @@ class HomeViewModel @Inject constructor(
     }
 
     fun onDeleteHabit(habitId: String) {
-        viewModelScope.launch {
-            habitRepository.deleteHabit(habitId)
-        }
+        viewModelScope.launch { habitRepository.deleteHabit(habitId) }
     }
 
     fun onUpdateHabitTitleDescription(habitId: String, newTitle: String, newDescription: String) {
         viewModelScope.launch {
             val currentHabit = habitRepository.getHabitById(habitId)
             if (currentHabit != null) {
-                val updatedHabit = currentHabit.copy(
-                    title = newTitle,
-                    description = newDescription
-                )
+                val updatedHabit = currentHabit.copy(title = newTitle, description = newDescription)
                 habitRepository.saveHabit(updatedHabit)
             }
         }
     }
 
     private fun syncUserData() {
-        viewModelScope.launch {
-            habitRepository.syncHabits()
-        }
+        viewModelScope.launch { habitRepository.syncHabits() }
     }
 
     fun clearError() {

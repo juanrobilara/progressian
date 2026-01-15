@@ -8,7 +8,7 @@ import javax.inject.Inject
 class GenerateHabitPlanUseCase @Inject constructor(
     private val aiRepository: AIRepository
 ) {
-    suspend operator fun invoke(userGoal: String): Result<Habit> {
+    suspend operator fun invoke(userGoal: String): Result<List<Habit>> {
         if (userGoal.isBlank()) {
             return Result.Error(Exception("El objetivo no puede estar vacío"))
         }

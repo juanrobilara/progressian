@@ -7,10 +7,13 @@ import com.jurobil.progressian.core.result.Result
 import com.jurobil.progressian.data.remote.ai.GeminiPrompts
 import com.jurobil.progressian.domain.model.Difficulty
 import com.jurobil.progressian.domain.model.Habit
+import com.jurobil.progressian.domain.model.HabitFrequency
+import com.jurobil.progressian.domain.model.HabitType
 import com.jurobil.progressian.domain.model.Mission
 import com.jurobil.progressian.domain.repository.AIRepository
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
+import java.util.UUID
 import javax.inject.Inject
 
 class AIRepositoryImpl @Inject constructor(
@@ -19,7 +22,8 @@ class AIRepositoryImpl @Inject constructor(
 
     private val gson = Gson()
 
-    override suspend fun generateHabitPlan(userGoal: String): Result<Habit> = withContext(Dispatchers.IO) {
+
+    override suspend fun generateHabitPlan(userGoal: String): Result<List<Habit>> = withContext(Dispatchers.IO) {
         try {
             val prompt = GeminiPrompts.buildGamificationPrompt(userGoal)
             val response = generativeModel.generateContent(prompt)
@@ -33,14 +37,10 @@ class AIRepositoryImpl @Inject constructor(
                         .removeSuffix("```")
                         .trim()
 
-                    val aiHabitResponse = gson.fromJson(cleanJson, AIHabitResponseDto::class.java)
+                    val aiResponse = gson.fromJson(cleanJson, AIPlanResponseDto::class.java)
+                    val generatedHabits = mapToDomain(aiResponse)
 
-                    if (aiHabitResponse.missions.isEmpty()) {
-                        return@withContext Result.Error(Exception("La IA no generó misiones."))
-                    }
-
-                    val habit = mapToDomain(aiHabitResponse)
-                    Result.Success(habit)
+                    Result.Success(generatedHabits)
                 } catch (e: Exception) {
                     Log.e("AIRepository", "Error parseando JSON", e)
                     Result.Error(Exception("Error leyendo JSON: ${e.message}"))
@@ -54,42 +54,90 @@ class AIRepositoryImpl @Inject constructor(
         }
     }
 
-    private data class AIHabitResponseDto(
+    override suspend fun generatePixelArt(prompt: String): Result<String> {
+        val seed = prompt.replace(" ", "")
+        return Result.Success("[https://api.dicebear.com/9.x/pixel-art/svg?seed=$seed](https://api.dicebear.com/9.x/pixel-art/svg?seed=$seed)")
+    }
+
+
+    private data class AIPlanResponseDto(
+        val routine: AIRoutineDto,
+        val quests: List<AIQuestDto>
+    )
+
+    private data class AIRoutineDto(
         val title: String,
         val description: String,
-        val pixel_art_prompt: String,
-        val total_xp_reward: Int,
-        val missions: List<AIMissionDto>
+        val xp_reward: Int,
+        val daily_missions: List<AIMissionDto>
+    )
+
+    private data class AIQuestDto(
+        val title: String,
+        val description: String,
+        val xp_reward: Int,
+        val difficulty: String,
+        val sub_tasks: List<AIMissionDto>
     )
 
     private data class AIMissionDto(
         val title: String,
         val description: String,
         val xp: Int,
-        val difficulty: String,
-        val icon_emoji: String
+        val difficulty: String
     )
 
-    private fun mapToDomain(dto: AIHabitResponseDto): Habit {
-        val habitId = java.util.UUID.randomUUID().toString()
-        return Habit(
-            id = habitId,
-            title = dto.title,
-            description = dto.description,
-            imageUrl = null,
-            totalXpReward = dto.total_xp_reward,
-            missions = dto.missions.map { missionDto ->
+    private fun mapToDomain(dto: AIPlanResponseDto): List<Habit> {
+        val resultList = mutableListOf<Habit>()
+        val routineId = UUID.randomUUID().toString()
+
+        val routineHabit = Habit(
+            id = routineId,
+            parentId = null,
+            title = dto.routine.title,
+            description = dto.routine.description,
+            totalXpReward = dto.routine.xp_reward,
+            type = HabitType.ROUTINE,
+            frequency = HabitFrequency.DAILY,
+            missions = dto.routine.daily_missions.map { m ->
                 Mission(
-                    id = java.util.UUID.randomUUID().toString(),
-                    habitId = habitId,
-                    title = missionDto.title,
-                    description = missionDto.description,
-                    difficulty = parseDifficulty(missionDto.difficulty),
-                    xpReward = missionDto.xp,
-                    imageUrl = null
+                    id = UUID.randomUUID().toString(),
+                    habitId = routineId,
+                    title = m.title,
+                    description = m.description,
+                    difficulty = parseDifficulty(m.difficulty),
+                    xpReward = m.xp
                 )
             }
         )
+        resultList.add(routineHabit)
+
+        dto.quests.forEachIndexed { index, questDto ->
+            val questId = UUID.randomUUID().toString()
+            val questHabit = Habit(
+                id = questId,
+                parentId = routineId,
+                orderIndex = index,
+                title = questDto.title,
+                description = questDto.description,
+                totalXpReward = questDto.xp_reward,
+                type = HabitType.QUEST,
+                frequency = HabitFrequency.ONE_TIME,
+                missions = questDto.sub_tasks.map { m ->
+                    Mission(
+                        id = UUID.randomUUID().toString(),
+                        habitId = questId,
+                        title = m.title,
+                        description = m.description,
+                        difficulty = parseDifficulty(m.difficulty),
+                        xpReward = m.xp
+                    )
+                }
+            )
+            resultList.add(questHabit)
+        }
+
+        return resultList
     }
 
     private fun parseDifficulty(diff: String): Difficulty {
@@ -98,10 +146,5 @@ class AIRepositoryImpl @Inject constructor(
         } catch (e: Exception) {
             Difficulty.MEDIUM
         }
-    }
-
-    override suspend fun generatePixelArt(prompt: String): Result<String> {
-        val seed = prompt.replace(" ", "")
-        return Result.Success("[https://api.dicebear.com/9.x/pixel-art/svg?seed=$seed](https://api.dicebear.com/9.x/pixel-art/svg?seed=$seed)")
     }
 }
