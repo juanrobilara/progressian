@@ -2,6 +2,7 @@ package com.jurobil.progressian.ui.screens.feedScreen
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
@@ -43,6 +44,7 @@ import com.jurobil.progressian.domain.model.Habit
 import com.jurobil.progressian.domain.model.Post
 import com.jurobil.progressian.domain.model.PostType
 import com.jurobil.progressian.ui.screens.feedScreen.components.CreatePostDialog
+import com.jurobil.progressian.ui.screens.feedScreen.components.UserProfileDialog
 import com.jurobil.progressian.ui.screens.feedScreen.viewmodel.FeedViewModel
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -100,10 +102,21 @@ fun FeedScreen(
                         viewModel.cloneHabit(habit)
                     },
                     onEditClick = { postToEdit = post },
-                    onDeleteClick = { postToDelete = post }
+                    onDeleteClick = { postToDelete = post },
+                    onProfileClick = { authorId -> viewModel.onSelectUser(authorId) }
                 )
             }
         }
+
+        if (state.selectedUserProfile != null) {
+            UserProfileDialog(
+                user = state.selectedUserProfile!!,
+                currentUserId = viewModel.currentUserId,
+                onDismiss = { viewModel.onDismissUserProfile() },
+                onToggleFollow = { targetId -> viewModel.toggleFollow(targetId) }
+            )
+        }
+
     }
 
 
@@ -178,7 +191,8 @@ fun RpgPostCard(
     onCommentClick: () -> Unit,
     onCloneClick: (Habit) -> Unit,
     onEditClick: (Post) -> Unit,
-    onDeleteClick: (Post) -> Unit
+    onDeleteClick: (Post) -> Unit,
+    onProfileClick: (String) -> Unit
 ) {
     var showFullDialog by remember { mutableStateOf(false) }
     var showMenu by remember { mutableStateOf(false) }
@@ -196,29 +210,34 @@ fun RpgPostCard(
         Column(modifier = Modifier.padding(16.dp)) {
 
             Row(verticalAlignment = Alignment.CenterVertically) {
-                if (post.authorPhotoUrl != null) {
-                    AsyncImage(
-                        model = ImageRequest.Builder(LocalContext.current)
-                            .data(post.authorPhotoUrl)
-                            .crossfade(true)
-                            .size(100, 100)
-                            .build(),
-                        contentDescription = null,
-                        modifier = Modifier
-                            .size(40.dp)
-                            .clip(CircleShape)
-                            .border(1.dp, MaterialTheme.colorScheme.primary, CircleShape),
-                        contentScale = ContentScale.Crop
-                    )
-                } else {
-                    Box(
-                        modifier = Modifier
-                            .size(40.dp)
-                            .clip(CircleShape)
-                            .background(Color.Gray),
-                        contentAlignment = Alignment.Center
-                    ) {
-                        Text(post.authorName.take(1), color = Color.White)
+                Box(
+                    modifier = Modifier
+                        .clickable { onProfileClick(post.authorId) }
+                ) {
+                    if (post.authorPhotoUrl != null) {
+                        AsyncImage(
+                            model = ImageRequest.Builder(LocalContext.current)
+                                .data(post.authorPhotoUrl)
+                                .crossfade(true)
+                                .size(100, 100)
+                                .build(),
+                            contentDescription = null,
+                            modifier = Modifier
+                                .size(40.dp)
+                                .clip(CircleShape)
+                                .border(1.dp, MaterialTheme.colorScheme.primary, CircleShape),
+                            contentScale = ContentScale.Crop
+                        )
+                    } else {
+                        Box(
+                            modifier = Modifier
+                                .size(40.dp)
+                                .clip(CircleShape)
+                                .background(Color.Gray),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            Text(post.authorName.take(1), color = Color.White)
+                        }
                     }
                 }
 
@@ -299,7 +318,7 @@ fun RpgPostCard(
                 ) {
                     Column(modifier = Modifier.padding(12.dp).fillMaxWidth()) {
                         Row(verticalAlignment = Alignment.CenterVertically) {
-                            Text("📜 Pergamino de Hábito", style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.primary)
+                            Text("Pergamino de Hábito", style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.primary)
                         }
                         Spacer(modifier = Modifier.height(4.dp))
                         Text(post.sharedHabit.title, fontWeight = FontWeight.Bold, style = MaterialTheme.typography.titleMedium)

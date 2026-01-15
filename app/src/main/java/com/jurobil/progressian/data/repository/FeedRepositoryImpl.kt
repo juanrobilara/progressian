@@ -9,9 +9,12 @@ import com.jurobil.progressian.domain.model.Habit
 import com.jurobil.progressian.domain.model.Post
 import com.jurobil.progressian.domain.model.PostType
 import com.jurobil.progressian.domain.repository.FeedRepository
+import kotlinx.coroutines.async
+import kotlinx.coroutines.awaitAll
 import kotlinx.coroutines.channels.awaitClose
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.callbackFlow
+import kotlinx.coroutines.launch
 import kotlinx.coroutines.tasks.await
 import javax.inject.Inject
 
@@ -21,6 +24,7 @@ class FeedRepositoryImpl @Inject constructor(
 ) : FeedRepository {
 
     override fun getFeed(): Flow<List<Post>> = callbackFlow {
+        val userId = auth.currentUser?.uid
         var registration: ListenerRegistration? = null
 
         registration = firestore.collection("posts")
@@ -32,10 +36,32 @@ class FeedRepositoryImpl @Inject constructor(
                     return@addSnapshotListener
                 }
 
-                val posts = snapshot?.toObjects(Post::class.java) ?: emptyList()
-                trySend(posts)
-            }
+                val docs = snapshot?.documents ?: emptyList()
 
+                launch {
+                    val posts = docs.map { doc ->
+                        async {
+                            val post = doc.toObject(Post::class.java)?.copy(id = doc.id)
+
+                            if (post != null && userId != null) {
+                                val isLiked = firestore.collection("posts")
+                                    .document(post.id)
+                                    .collection("likes")
+                                    .document(userId)
+                                    .get()
+                                    .await()
+                                    .exists()
+
+                                post.copy(isLikedByCurrentUser = isLiked)
+                            } else {
+                                post
+                            }
+                        }
+                    }.awaitAll().filterNotNull()
+
+                    trySend(posts)
+                }
+            }
         awaitClose { registration?.remove() }
     }
 

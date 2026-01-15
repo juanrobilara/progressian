@@ -14,6 +14,14 @@
       },
       "oauth_client": [
         {
+          "client_id": "87862055668-25hur2j841fnfls0hk54uu0u32u0e740.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.jurobil.progressian",
+            "certificate_hash": "e1fe1958e804062938bdcc740f2ab5fe2856ce89"
+          }
+        },
+        {
           "client_id": "87862055668-r4k1uaohll05dt3rgmq1g97agv955t47.apps.googleusercontent.com",
           "client_type": 1,
           "android_info": {
