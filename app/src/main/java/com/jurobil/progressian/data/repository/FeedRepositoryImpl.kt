@@ -4,6 +4,7 @@ import android.util.Log
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.firestore.FirebaseFirestore
 import com.google.firebase.firestore.ListenerRegistration
+import com.jurobil.progressian.data.mapper.toPost
 import com.jurobil.progressian.domain.model.Comment
 import com.jurobil.progressian.domain.model.Habit
 import com.jurobil.progressian.domain.model.Post
@@ -41,7 +42,7 @@ class FeedRepositoryImpl @Inject constructor(
                 launch {
                     val posts = docs.map { doc ->
                         async {
-                            val post = doc.toObject(Post::class.java)?.copy(id = doc.id)
+                            val post = doc.toPost()
 
                             if (post != null && userId != null) {
                                 val isLiked = firestore.collection("posts")

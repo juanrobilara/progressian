@@ -15,7 +15,14 @@ fun Habit.toEntity(): HabitEntity {
         imageUrl = this.imageUrl,
         totalXpReward = this.totalXpReward,
         isCompleted = this.isCompleted,
-        createdAt = this.createdAt
+        createdAt = this.createdAt,
+        type = this.type,
+        frequency = this.frequency,
+        currentStreak = this.currentStreak,
+        bestStreak = this.bestStreak,
+        lastCompletedDate = this.lastCompletedDate,
+        parentId = this.parentId,
+        orderIndex = this.orderIndex
     )
 }
 
@@ -43,7 +50,14 @@ fun HabitWithMissions.toDomain(): Habit {
         totalXpReward = this.habit.totalXpReward,
         isCompleted = this.habit.isCompleted,
         missions = this.missions.map { it.toDomain() },
-        createdAt = this.habit.createdAt
+        createdAt = this.habit.createdAt,
+        type = this.habit.type,
+        frequency = this.habit.frequency,
+        currentStreak = this.habit.currentStreak,
+        bestStreak = this.habit.bestStreak,
+        lastCompletedDate = this.habit.lastCompletedDate,
+        parentId = this.habit.parentId,
+        orderIndex = this.habit.orderIndex
     )
 }
 

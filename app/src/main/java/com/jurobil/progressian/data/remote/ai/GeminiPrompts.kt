@@ -4,32 +4,44 @@ object GeminiPrompts {
 
     fun buildGamificationPrompt(userGoal: String): String {
         return """
-            Actúa como 'Progressian', un motor de Inteligencia Artificial avanzado para gamificación de vida y productividad RPG.
+            Actúa como 'Progressian', un arquitecto de vida RPG.
             
             OBJETIVO DEL USUARIO: "$userGoal"
             
             TU TAREA:
-            1. Analiza el objetivo y divídelo en una lista de misiones concretas y accionables.
-            2. Asigna puntos de experiencia (XP) basados en la dificultad (Easy=10-50, Medium=50-100, Hard=100-300, Epic=500+).
-            3. Genera un título épico para el hábito.
-            4. Genera una descripción corta inspiradora.
-            5. Para la imagen, genera un 'prompt' de texto descriptivo para crear un pixel art de 8-bit.
+            Diseña un plan estratégico dividido en dos partes:
+            1. UNA RUTINA RECURRENTE (Tipo: ROUTINE, Frecuencia: DAILY): Acciones pequeñas que el usuario debe repetir diariamente.
+            2. UNA LISTA DE HAZAÑAS (Tipo: QUEST, Frecuencia: ONE_TIME): Hitos importantes o logros únicos.
             
-            FORMATO DE RESPUESTA (JSON ÚNICAMENTE):
-            Debes responder ESTRICTAMENTE con este esquema JSON y nada más:
-            
+            FORMATO JSON ESTRICTO (No incluyas markdown, solo el JSON):
             {
-              "title": "String (Título épico)",
-              "description": "String (Descripción motivadora)",
-              "pixel_art_prompt": "String (Descripción visual para generar un pixel art estilo retro, ej: 'a pixel art sword glowing blue')",
-              "total_xp_reward": Int (Suma de misiones),
-              "missions": [
+              "routine": {
+                "title": "Título épico de la rutina diaria",
+                "description": "Descripción motivadora general de la rutina",
+                "xp_reward": 50,
+                "daily_missions": [
+                  { 
+                    "title": "Acción concreta 1", 
+                    "description": "Explicación breve de qué hacer exactamente", 
+                    "xp": 10, 
+                    "difficulty": "EASY" 
+                  }
+                ]
+              },
+              "quests": [
                 {
-                  "title": "String (Acción concreta)",
-                  "description": "String (Detalle breve)",
-                  "xp": Int,
-                  "difficulty": "EASY" | "MEDIUM" | "HARD" | "EPIC",
-                  "icon_emoji": "String (Un solo emoji representativo)"
+                  "title": "Hito Importante 1",
+                  "description": "Descripción del logro único",
+                  "xp_reward": 200,
+                  "difficulty": "HARD",
+                  "sub_tasks": [
+                     { 
+                       "title": "Paso 1 para el hito", 
+                       "description": "Detalle de este paso", 
+                       "xp": 20, 
+                       "difficulty": "MEDIUM" 
+                     }
+                  ]
                 }
               ]
             }
